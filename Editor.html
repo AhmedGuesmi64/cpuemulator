@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CP Emulator — Editor</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="topnav card">
+      <div class="topnav-left">
+        <a href="index.html" class="topnav-link">Home</a>
+        <a href="editor.html" class="topnav-link">Editor</a>
+        <a href="emulator.html" class="topnav-link">Emulator</a>
+        <a href="docs/README.html" class="topnav-link">Docs</a>
+      </div>
+      <div class="topnav-right">
+        <button class="btn secondary" id="nav-back">Back</button>
+        <button class="btn secondary" id="nav-forward">Forward</button>
+      </div>
+    </nav>
+    
+    <div class="header">
+      <div class="brand">CP</div>
+      <div>
+        <div class="title">CP Emulator — Editor</div>
+        <div class="subtitle">Write assembly, assemble, export, and run in emulator</div>
+      </div>
+    </div>
+
+    <div class="editor row">
+      <!-- LEFT: Authoring -->
+      <div class="pane">
+        <div class="top-controls card">
+          <div>
+            <strong>Assembly Source</strong>
+            <textarea id="assembler-in" class="input" rows="10" placeholder="LD [00], r0&#10;LD [01], r1&#10;ADD r2, r0, r1&#10;ST r2, [02]"></textarea>
+            <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" onclick="assemble()">Assemble → Preview</button>
+              <button class="btn" onclick="saveProgram()">Save (.hex)</button>
+              <button class="btn secondary" onclick="clearSource()">Clear</button>
+              <button class="btn secondary" onclick="loadSample()">Load Example</button>
+            </div>
+          </div>
+
+          <div>
+            <strong>Machine Code (hex)</strong>
+            <textarea id="machine-in" class="input" rows="10" placeholder="00 01 A1 12 10 C0"></textarea>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <button class="btn secondary" onclick="loadMachineCode()">Load → Preview</button>
+              <input id="file-input" type="file" style="display:none" onchange="handleFile(event)"/>
+              <button class="btn secondary" onclick="document.getElementById('file-input').click()">Import .hex / .asm</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="card notes-highlight" tabindex="0">
+          <strong>Notes / Editor</strong>
+          <div class="code" contenteditable="true" id="notes">Use the assembly box to write code. Click "Assemble → Preview" to see program memory below. When ready click "Run in Emulator".</div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="openInEmulator()">Run in Emulator</button>
+          <button class="btn secondary" onclick="openInEmulator(true)">Run & Load Sample (replace)</button>
+        </div>
+      </div>
+
+      <!-- MIDDLE: Preview -->
+      <div class="pane card emulator-pane">
+        <div style="margin-bottom:8px">
+          <strong>Program Memory (Preview)</strong>
+          <table id="prog-mem-table" class="table" style="margin-top:8px"></table>
+        </div>
+        <div style="margin-top:12px">
+          <strong>Data Memory (Preview)</strong>
+          <table id="data-mem-table" class="table" style="margin-top:8px"></table>
+        </div>
+      </div>
+
+      <!-- RIGHT: Controls -->
+      <div class="pane" style="max-width:320px">
+        <div class="card">
+          <div><strong>Registers (preview)</strong></div>
+          <div id="regs" class="regs" style="margin:8px 0">r0:00 | r1:00 | r2:00 | r3:00</div>
+          <div class="kv"><strong>PC:</strong><div id="pc" style="min-width:48px">00</div><strong style="margin-left:8px">Flags:</strong><div id="flags" class="note" style="min-width:90px;margin-left:6px">Z:0 C:0</div></div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="card">
+          <strong>Execution Trace</strong>
+          <div id="trace" style="margin-top:8px; max-height:200px; overflow:auto; font-family:var(--mono); font-size:13px; color:var(--muted-text)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+<script src="js/navigationMenuScript.js"></script>
+<script>
+/* Small assembler + preview + export + "open in emulator" using fragment hash hex=... */
+
+/* Layout sizes */
+const PMEM_SIZE = 32, DMEM_SIZE = 32;
+
+/* State for preview only */
+let pmem = new Uint8Array(PMEM_SIZE).fill(0);
+let dmem = new Uint8Array(DMEM_SIZE).fill(0);
+let regs = [0,0,0,0];
+let flags = {Z:false,C:false};
+let pc = 0;
+let halted = false;
+
+/* Helpers */
+function toHex(x,pad=2){ return (x&0xFF).toString(16).toUpperCase().padStart(pad,'0'); }
+function logTrace(s){ const t=document.getElementById('trace'); const el=document.createElement('div'); el.textContent=s; t.prepend(el); while(t.children.length>200) t.removeChild(t.lastChild); }
+
+/* Disasm */
+function disasm(instr){
+  let b=instr, op=(b&0xC0)>>6;
+  if(op===0){ let isStore=(b&0x20)!==0; let operand=(b>>2)&0x0F; let r=b&0x03; return isStore?`ST r${r}, [${toHex(operand)}]`:`LD [${toHex(operand)}], r${r}`; }
+  if(op===2){ let z=(b>>4)&0x03, x=(b>>2)&0x03, y=b&0x03; return `ADD r${z}, r${x}, r${y}`; }
+  if(op===3) return `JMP ${toHex(b&0x3F)}`;
+  return 'UNK';
+}
+
+/* Assemble simple assembly to pmem (same parser used in emulator) */
+function assemble(){
+  const src = document.getElementById('assembler-in').value.trim().split(/\n/);
+  let out = [];
+  for(let line of src){
+    line = line.replace(/(;|#).*$/,'').trim();
+    if(!line) continue;
+    let m;
+    if(m=line.match(/^LD\s*\[\s*([^\]]+)\s*\],\s*r([0-3])$/i)){
+      let addr = parseInt(m[1],16); if(isNaN(addr)){ alert('Bad LD address: '+m[1]); return; }
+      addr &= 0x0F; let r = parseInt(m[2],10)&0x03;
+      out.push((0x00)|((addr&0x0F)<<2)|(r&0x03));
+    } else if(m=line.match(/^ST\s*r([0-3])\s*,\s*\[\s*([^\]]+)\s*\]$/i)){
+      let r = parseInt(m[1],10)&0x03; let addr = parseInt(m[2],16); if(isNaN(addr)){ alert('Bad ST address: '+m[2]); return; }
+      addr &= 0x0F; out.push((0x00)|0x20|((addr&0x0F)<<2)|(r&0x03));
+    } else if(m=line.match(/^ADD\s*r([0-3])\s*,\s*r([0-3])\s*,\s*r([0-3])$/i)){
+      let z=parseInt(m[1],10)&0x03, x=parseInt(m[2],10)&0x03, y=parseInt(m[3],10)&0x03;
+      out.push(0x80|((z&0x03)<<4)|((x&0x03)<<2)|(y&0x03));
+    } else if(m=line.match(/^JMP\s*([0-9A-Fa-f]+)$/i)){
+      let addr=parseInt(m[1],16); if(isNaN(addr)){ alert('Bad JMP address: '+m[1]); return; }
+      addr &= 0x3F; out.push(0xC0|addr);
+    } else { alert('Cannot parse: ' + line); return; }
+  }
+  pmem.fill(0); out.forEach((v,i)=>pmem[i]=v);
+  pc = 0; halted = false;
+  // keep dmem unchanged for preview unless you want to reset
+  updateAll();
+}
+
+/* Load machine hex into pmem from machine-in textarea */
+function loadMachineCode(){
+  let txt = document.getElementById('machine-in').value.trim();
+  if(!txt) return;
+  let parts = txt.split(/[\s,]+/).filter(x=>x);
+  if(parts.some(x=>!/^[0-9A-Fa-f]{1,2}$/.test(x))){ alert('Enter hex bytes like: 00 01 A1'); return; }
+  pmem.fill(0); parts.map(x=>parseInt(x,16)&0xFF).forEach((v,i)=>pmem[i]=v);
+  pc = 0; halted = false; updateAll();
+}
+
+/* File import: accept hex or assembly text */
+function handleFile(ev){
+  const f = ev.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = (e) => {
+    const txt = e.target.result.replace(/\r/g,'').trim();
+    if(/^[0-9A-Fa-f\s,]+$/.test(txt)) {
+      document.getElementById('machine-in').value = txt;
+      loadMachineCode();
+    } else {
+      document.getElementById('assembler-in').value = txt;
+      assemble();
+    }
+  };
+  r.readAsText(f);
+}
+
+/* Save pmem as .hex */
+function saveProgram(){
+  // if pmem all 0, still save zeros
+  let hex = Array.from(pmem).map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
+  const blob = new Blob([hex], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'program.hex';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/* Clear source */
+function clearSource(){
+  document.getElementById('assembler-in').value='';
+  document.getElementById('machine-in').value='';
+  document.getElementById('notes').innerText='';
+}
+
+/* Preview update: program memory and data memory */
+function updateAll(){
+  let t = '<tr><th>Addr</th><th>Hex</th><th>Disasm</th></tr>';
+  for(let i=0;i<PMEM_SIZE;i++){
+    let cls = (i===pc && !halted && pc>=0 && pc<PMEM_SIZE) ? 'highlight' : '';
+    t += `<tr ${cls? 'class="highlight"':'' }><td>${toHex(i)}</td><td>${toHex(pmem[i])}</td><td>${disasm(pmem[i])}</td></tr>`;
+  }
+  document.getElementById('prog-mem-table').innerHTML = t;
+
+  let d = '<tr><th>Addr</th><th>Hex</th><th>Dec</th></tr>';
+  for(let i=0;i<DMEM_SIZE;i++){
+    d += `<tr><td>${toHex(i)}</td><td contenteditable='true' onblur='editDmem(${i}, this.innerText)'>${toHex(dmem[i])}</td><td>${dmem[i]}</td></tr>`;
+  }
+  document.getElementById('data-mem-table').innerHTML = d;
+
+  document.getElementById('regs').innerText = regs.map((v,i)=>`r${i}: ${toHex(v)}`).join(' | ');
+  document.getElementById('pc').innerText = toHex(pc);
+  document.getElementById('flags').innerText = 'Z:'+(flags.Z?1:0)+' C:'+(flags.C?1:0);
+}
+
+/* Editing data memory in preview */
+function editDmem(i, v){
+  let s = v.trim();
+  let x = parseInt(s,16);
+  if(isNaN(x)) x = parseInt(s,10);
+  if(isNaN(x) || x<0 || x>255) x = 0;
+  dmem[i] = x & 0xFF; updateAll();
+}
+
+/* Default instruction: LD [00], r0 => 0x00 */
+function defaultInstr(){ return 0x00; }
+
+/* Reset preview: default pmem filled with LD [00], r0; dmem cleared */
+function reset(){
+  pmem.fill(defaultInstr());
+  dmem.fill(0);
+  regs = [0,0,0,0];
+  flags = {Z:false,C:false};
+  pc = 0; halted = false;
+  document.getElementById('trace').innerHTML = '';
+  updateAll();
+}
+
+/* Small sample program (for loadSample button) */
+const SAMPLE = [
+  0x00, // LD [00], r0
+  (0x00)|((0x01&0x0F)<<2)|1, // LD [01], r1
+  0x80|((2&0x03)<<4)|((0&0x03)<<2)|1, // ADD r2,r0,r1
+  (0x00)|0x20|((0x02&0x0F)<<2)|2, // ST r2,[02]
+  0xC0|0x06 // JMP 06
+];
+function loadSample(){ pmem.fill(0); SAMPLE.forEach((v,i)=>pmem[i]=v); dmem.fill(0); dmem[0]=0x05; dmem[1]=0x07; pc=0; halted=false; document.getElementById('trace').innerHTML=''; updateAll(); }
+
+/* Open emulator with pmem encoded in fragment: #hex=XX+YY+... (space replaced with +) */
+/* If useUrlLoadReplace=true, the emulator will replace its PMEM with provided hex upon load */
+function openInEmulator(useUrlLoadReplace = false){
+  // ensure pmem current (assemble if assembly textarea non-empty and pmem is default)
+  // if assembly textbox contains content, assemble it to pmem
+  const asmBox = document.getElementById('assembler-in').value.trim();
+  if(asmBox) assemble();
+  // build hex string (space separated)
+  const hex = Array.from(pmem).map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
+  const encoded = encodeURIComponent(hex);
+  const url = `emulator.html#hex=${encoded}${useUrlLoadReplace? '&replace=1':''}`;
+  window.open(url, '_blank');
+}
+
+/* Initialize preview on load */
+reset();
+
+/* Expose useful functions for debugging */
+window.assemble = assemble;
+window.loadMachineCode = loadMachineCode;
+window.loadSample = loadSample;
+window.saveProgram = saveProgram;
+window.reset = reset;
+window.openInEmulator = openInEmulator;
+</script>
+</body>
+</html>

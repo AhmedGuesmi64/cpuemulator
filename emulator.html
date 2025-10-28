@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CP Emulator — Runtime</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="topnav card">
+        <div class="topnav-left">
+          <a href="index.html" class="topnav-link">Home</a>
+          <a href="editor.html" class="topnav-link">Editor</a>
+          <a href="emulator.html" class="topnav-link">Emulator</a>
+          <a href="docs/README.html" class="topnav-link">Docs</a>
+        </div>
+        <div class="topnav-right">
+          <button class="btn secondary" id="nav-back">Back</button>
+          <button class="btn secondary" id="nav-forward">Forward</button>
+        </div>
+      </nav>
+      
+    <div class="header">
+      <div class="brand">CP</div>
+      <div>
+        <div class="title">CP Emulator — Runtime</div>
+        <div class="subtitle">Step / Run / Animate a tiny CPU</div>
+      </div>
+    </div>
+
+    <div class="editor row">
+      <!-- LEFT: Controls -->
+      <div class="pane">
+        <div class="top-controls card">
+          <div>
+            <strong>Assembler (optional)</strong>
+            <textarea id="assembler-in" class="input" rows="6" placeholder="LD [00], r0&#10;LD [01], r1..."></textarea>
+            <div style="margin-top:8px">
+              <button class="btn" onclick="assemble()">Assemble → Program Memory</button>
+              <button class="btn secondary" onclick="clearSource()">Clear</button>
+              <button class="btn secondary" onclick="loadSample()">Load Example</button>
+            </div>
+          </div>
+
+          <div>
+            <strong>Machine Code (hex)</strong>
+            <textarea id="machine-in" class="input" rows="6" placeholder="00 01 A1 12 10 C0"></textarea>
+            <div style="margin-top:8px">
+              <button class="btn secondary" onclick="loadMachineCode()">Load → Program Memory</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="card notes-highlight" tabindex="0">
+          <strong>Notes</strong>
+          <div class="code" contenteditable="true" id="notes">Use Step to execute single instruction; Animate to watch automatic execution.</div>
+        </div>
+      </div>
+
+      <!-- MIDDLE: Program / Data mem -->
+      <div class="pane card emulator-pane">
+        <div style="margin-bottom:8px">
+          <strong>Program Memory</strong>
+          <table id="prog-mem-table" class="table" style="margin-top:8px"></table>
+        </div>
+        <div style="margin-top:12px">
+          <strong>Data Memory</strong>
+          <table id="data-mem-table" class="table" style="margin-top:8px"></table>
+        </div>
+      </div>
+
+      <!-- RIGHT: Registers & controls -->
+      <div class="pane" style="max-width:320px">
+        <div class="card">
+          <div><strong>Registers</strong></div>
+          <div id="regs" class="regs" style="margin:8px 0">r0:00 | r1:00 | r2:00 | r3:00</div>
+          <div class="kv"><strong>PC:</strong><div id="pc" style="min-width:48px">00</div><strong style="margin-left:8px">Flags:</strong><div id="flags" class="note" style="min-width:90px;margin-left:6px">Z:0 C:0</div></div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="card">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" onclick="step()">Step</button>
+            <button class="btn" onclick="run()">Run</button>
+            <button class="btn" onclick="animate()">Animate</button>
+            <button class="btn secondary" onclick="reset()">Reset</button>
+            <button class="btn secondary" onclick="stop()">Stop</button>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+            <label style="font-size:13px;color:var(--muted-text)">Anim delay (ms):</label>
+            <input id="anim-delay" type="number" class="input" value="400" style="width:84px;padding:8px"/>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="card">
+          <strong>Execution Trace</strong>
+          <div id="trace" style="margin-top:8px; max-height:200px; overflow:auto; font-family:var(--mono); font-size:13px; color:var(--muted-text)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/navigationMenuScript.js"></script>
+
+<script>
+/* Runtime emulator with fragment-based auto-load:
+   - supports fragment: #hex=...  where value is encodeURIComponent of space-separated hex bytes
+   - optional fragment &replace=1 ignored here (kept for compatibility)
+*/
+
+const PMEM_SIZE = 32, DMEM_SIZE = 32;
+let pmem = new Uint8Array(PMEM_SIZE).fill(0);
+let dmem = new Uint8Array(DMEM_SIZE).fill(0);
+let regs = [0,0,0,0];
+let flags = {Z:false,C:false};
+let pc = 0;
+let halted = false;
+let running = false;
+let animTimer = null;
+
+function toHex(x,pad=2){ return (x&0xFF).toString(16).toUpperCase().padStart(pad,'0'); }
+function logTrace(s){ const t = document.getElementById('trace'); const el = document.createElement('div'); el.textContent = s; t.prepend(el); while(t.children.length>200) t.removeChild(t.lastChild); }
+
+/* Disasm / Assembler (same as in Editor) */
+function disasm(instr){
+  let b=instr, op=(b&0xC0)>>6;
+  if(op===0){ let isStore=(b&0x20)!==0; let operand=(b>>2)&0x0F; let r=b&0x03; return isStore?`ST r${r}, [${toHex(operand)}]`:`LD [${toHex(operand)}], r${r}`; }
+  if(op===2){ let z=(b>>4)&0x03, x=(b>>2)&0x03, y=b&0x03; return `ADD r${z}, r${x}, r${y}`; }
+  if(op===3) return `JMP ${toHex(b&0x3F)}`; return 'UNK';
+}
+
+function assemble(){
+  const src = document.getElementById('assembler-in').value.trim().split(/\n/);
+  let out=[];
+  for(let line of src){
+    line = line.replace(/(;|#).*$/,'').trim();
+    if(!line) continue;
+    let m;
+    if(m=line.match(/^LD\s*\[\s*([^\]]+)\s*\],\s*r([0-3])$/i)){
+      let addr=parseInt(m[1],16); if(isNaN(addr)){ alert('Bad LD addr: '+m[1]); return; } addr &= 0x0F; let r=parseInt(m[2],10)&0x03;
+      out.push((0x00)|((addr&0x0F)<<2)|(r&0x03));
+    } else if(m=line.match(/^ST\s*r([0-3])\s*,\s*\[\s*([^\]]+)\s*\]$/i)){
+      let r=parseInt(m[1],10)&0x03; let addr=parseInt(m[2],16); if(isNaN(addr)){ alert('Bad ST addr: '+m[2]); return; } addr &= 0x0F;
+      out.push((0x00)|0x20|((addr&0x0F)<<2)|(r&0x03));
+    } else if(m=line.match(/^ADD\s*r([0-3])\s*,\s*r([0-3])\s*,\s*r([0-3])$/i)){
+      let z=parseInt(m[1],10)&0x03, x=parseInt(m[2],10)&0x03, y=parseInt(m[3],10)&0x03;
+      out.push(0x80|((z&0x03)<<4)|((x&0x03)<<2)|(y&0x03));
+    } else if(m=line.match(/^JMP\s*([0-9A-Fa-f]+)$/i)){
+      let addr=parseInt(m[1],16); if(isNaN(addr)){ alert('Bad JMP addr: '+m[1]); return; } addr &= 0x3F; out.push(0xC0|addr);
+    } else {
+      alert('Cannot parse: ' + line); return;
+    }
+  }
+  pmem.fill(0); out.forEach((v,i)=>pmem[i]=v); pc=0; halted=false; updateAll();
+}
+
+function loadMachineCode(){
+  let txt = document.getElementById('machine-in').value.trim();
+  if(!txt) return;
+  let parts = txt.split(/[\s,]+/).filter(x=>x);
+  if(parts.some(x=>!/^[0-9A-Fa-f]{1,2}$/.test(x))){ alert('Enter hex bytes like: 00 01 A1'); return; }
+  pmem.fill(0); parts.map(x=>parseInt(x,16)&0xFF).forEach((v,i)=>pmem[i]=v);
+  pc = 0; halted = false; updateAll();
+}
+
+function clearSource(){ document.getElementById('assembler-in').value=''; document.getElementById('machine-in').value=''; document.getElementById('notes').innerText=''; }
+
+/* Execution */
+function execInstr(b){
+  let op=(b&0xC0)>>6;
+  if(op===0){
+    let isStore=(b&0x20)!==0; let reg=b&0x03; let addr=(b>>2)&0x0F;
+    if(isStore){ dmem[addr]=regs[reg]&0xFF; logTrace(`ST r${reg} -> [${toHex(addr)}] = ${toHex(dmem[addr])}`); flashDataCell(addr,'write'); }
+    else { regs[reg]=dmem[addr]&0xFF; logTrace(`LD [${toHex(addr)}] -> r${reg} = ${toHex(regs[reg])}`); flashDataCell(addr,'read'); }
+    pc=(pc+1)&0xFF;
+  } else if(op===2){
+    let z=(b>>4)&0x03, x=(b>>2)&0x03, y=b&0x03;
+    let s = regs[x] + regs[y];
+    flags.C = s > 0xFF;
+    regs[z] = s & 0xFF;
+    flags.Z = regs[z] === 0;
+    logTrace(`ADD r${z} = r${x} + r${y} -> ${toHex(regs[z])} (C:${flags.C?1:0} Z:${flags.Z?1:0})`);
+    pc=(pc+1)&0xFF;
+  } else if(op===3){
+    let addr=b&0x3F; logTrace(`JMP ${toHex(addr)}`); pc = addr & 0xFF;
+  } else { logTrace(`UNK ${toHex(b)}`); pc=(pc+1)&0xFF; }
+}
+
+/* step/run/animate/stop/reset */
+function step(){ if(pc<0||pc>=PMEM_SIZE){ halted=true; updateAll(); return; } execInstr(pmem[pc]); updateAll(); }
+function run(){
+  if(animTimer) clearInterval(animTimer);
+  running=true;
+  const MAX=20000; let s=0;
+  while(running && !halted && pc>=0 && pc<PMEM_SIZE && s<MAX){ execInstr(pmem[pc]); s++; }
+  if(s>=MAX){ running=false; logTrace('Run stopped: step limit'); }
+  updateAll(); running=false;
+}
+function animate(){
+  if(animTimer) clearInterval(animTimer);
+  running=true;
+  animTimer = setInterval(()=>{ if(!running || pc<0 || pc>=PMEM_SIZE || halted){ clearInterval(animTimer); running=false; return; } step(); }, parseInt(document.getElementById('anim-delay').value,10)||400);
+}
+function stop(){ running=false; if(animTimer) clearInterval(animTimer); animTimer=null; logTrace('Execution stopped'); }
+
+/* Default instruction = LD [00], r0 (0x00) */
+function defaultInstr(){ return 0x00; }
+
+/* Reset: pmem filled with defaultInstr, dmem cleared */
+function reset(){
+  pmem.fill(defaultInstr());
+  dmem.fill(0);
+  regs = [0,0,0,0];
+  flags = {Z:false,C:false};
+  pc = 0;
+  halted = false;
+  running = false;
+  if(animTimer) clearInterval(animTimer);
+  animTimer = null;
+  document.getElementById('trace').innerHTML = '';
+  updateAll();
+}
+
+/* Flash effect for data memory cell read/write */
+function flashDataCell(addr, mode){
+  const table = document.getElementById('data-mem-table');
+  const row = table.querySelectorAll('tr')[addr+1];
+  if(!row) return;
+  const cell = row.children[1];
+  const cls = mode === 'write' ? 'flash-write' : 'flash-read';
+  cell.style.transition = 'background .18s';
+  cell.style.background = mode === 'write' ? 'linear-gradient(90deg, rgba(61,223,230,0.12), rgba(24,180,162,0.06))' : 'linear-gradient(90deg, rgba(24,180,162,0.08), rgba(61,223,230,0.03))';
+  setTimeout(()=>{ cell.style.background = ''; }, 220);
+}
+
+/* loadSample (explicit) */
+const SAMPLE = [
+  0x00,
+  (0x00)|((0x01&0x0F)<<2)|1,
+  0x80|((2&0x03)<<4)|((0&0x03)<<2)|1,
+  (0x00)|0x20|((0x02&0x0F)<<2)|2,
+  0xC0|0x06
+];
+function loadSample(){ pmem.fill(0); SAMPLE.forEach((v,i)=>pmem[i]=v); dmem.fill(0); dmem[0]=0x05; dmem[1]=0x07; pc=0; halted=false; document.getElementById('trace').innerHTML=''; updateAll(); }
+
+/* Update UI tables */
+function updateAll(){
+  let t = '<tr><th>Addr</th><th>Hex</th><th>Disasm</th></tr>';
+  for(let i=0;i<PMEM_SIZE;i++){
+    let cls = (i===pc && !halted && pc>=0 && pc<PMEM_SIZE) ? 'highlight' : '';
+    t += `<tr ${cls? 'class="highlight"':'' }><td>${toHex(i)}</td><td>${toHex(pmem[i])}</td><td>${disasm(pmem[i])}</td></tr>`;
+  }
+  document.getElementById('prog-mem-table').innerHTML = t;
+
+  let d = '<tr><th>Addr</th><th>Hex</th><th>Dec</th></tr>';
+  for(let i=0;i<DMEM_SIZE;i++){
+    d += `<tr><td>${toHex(i)}</td><td contenteditable='true' onblur='editDmem(${i}, this.innerText)'>${toHex(dmem[i])}</td><td>${dmem[i]}</td></tr>`;
+  }
+  document.getElementById('data-mem-table').innerHTML = d;
+
+  document.getElementById('regs').innerText = regs.map((v,i)=>`r${i}: ${toHex(v)}`).join(' | ');
+  document.getElementById('pc').innerText = toHex(pc);
+  document.getElementById('flags').innerText = 'Z:'+(flags.Z?1:0)+' C:'+(flags.C?1:0);
+}
+
+/* edit data memory from UI */
+function editDmem(i, v){
+  let s = v.trim();
+  let x = parseInt(s,16);
+  if(isNaN(x)) x = parseInt(s,10);
+  if(isNaN(x) || x<0 || x>255) x = 0;
+  dmem[i] = x & 0xFF; updateAll();
+}
+
+/* Fragment loader: accepts #hex=ENCODED_HEX  where ENCODED_HEX = encodeURIComponent("00 01 02 ...") */
+function tryLoadFromFragment(){
+  const frag = location.hash.replace('#','');
+  if(!frag) return;
+  const params = new URLSearchParams(frag.replace(/\+/g,' '));
+  if(params.has('hex')){
+    try{
+      const encoded = params.get('hex');
+      const hex = decodeURIComponent(encoded);
+      const parts = hex.trim().split(/[\s,]+/).filter(x=>x);
+      if(parts.length){
+        pmem.fill(0);
+        parts.map(x=>parseInt(x,16)&0xFF).forEach((v,i)=>pmem[i]=v);
+      }
+    }catch(e){
+      console.warn('Failed to parse hex fragment', e);
+    }
+  }
+  if(params.has('replace')){ /* reserved for compatibility */ }
+  // if hash contains loadSample keyword
+  if(frag.indexOf('loadSample')>=0) loadSample();
+  updateAll();
+}
+
+/* On load: initialize default state, then check fragment for provided program */
+reset();
+tryLoadFromFragment();
+
+/* Expose loadSample to be callable from index/editor */
+window.loadSample = loadSample;
+window.reset = reset;
+window.assemble = assemble;
+window.loadMachineCode = loadMachineCode;
+</script>
+
+</body>
+</html>

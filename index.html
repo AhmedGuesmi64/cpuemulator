@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CP Emulator — Main Menu</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="topnav card">
+        <div class="topnav-left">
+          <a href="index.html" class="topnav-link">Home</a>
+          <a href="editor.html" class="topnav-link">Editor</a>
+          <a href="emulator.html" class="topnav-link">Emulator</a>
+          <a href="docs/README.html" class="topnav-link">Docs</a>
+        </div>
+        <div class="topnav-right">
+          <button class="btn secondary" id="nav-back">Back</button>
+          <button class="btn secondary" id="nav-forward">Forward</button>
+        </div>
+      </nav>
+      
+    <div class="header">
+      <div class="brand">CP</div>
+      <div>
+        <div class="title">CP Small Example Processor</div>
+        <div class="subtitle">Tiny 8-bit teaching CPU — Main Menu</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card" style="flex:1;">
+        <h3>Get started</h3>
+        <p class="note">Open the editor to write assembly, or run the emulator directly.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+          <a href="editor.html"><button class="btn">Open Editor</button></a>
+          <a href="emulator.html"><button class="btn secondary">Open Emulator</button></a>
+          <a href="emulator.html#loadSample"><button class="btn secondary">Quick Demo</button></a>
+        </div>
+      </div>
+
+      <div class="card" style="flex:1;">
+        <h3>Resources</h3>
+        <p class="note">Documentation, lab exercises, and presentation for professors.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+          <a href="docs/README.html"><button class="btn secondary">Documentation</button></a>
+          <a href="docs/exercices.html"><button class="btn secondary">Exercises</button></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="row">
+      <div class="card" style="flex:1;">
+        <h4>About this project</h4>
+        <p class="note">This demo shows a minimal CPU with 1-byte instructions: LD, ST, ADD, JMP. Use the editor to create programs and the emulator to step/animate execution.</p>
+      </div>
+
+      <div class="card" style="width:300px;">
+        <h4>Quick links</h4>
+        <div class="kv"><strong>Program mem:</strong><span class="note" style="margin-left:8px">32 bytes</span></div>
+        <div class="kv"><strong>Data mem:</strong><span class="note" style="margin-left:8px">32 bytes</span></div>
+        <div class="kv"><strong>Registers:</strong><span class="note" style="margin-left:8px">r0..r3</span></div>
+      </div>
+    </div>
+    <script src="js/navigationMenuScript.js"></script>
+
+</body>
+</html>

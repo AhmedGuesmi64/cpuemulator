@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Small Example Processor Emulator</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; }
+    .flex { display: flex; gap: 24px; }
+    .col { display: flex; flex-direction: column; gap: 12px; }
+    textarea, input { width: 100%; box-sizing: border-box; }
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    th, td { border: 1px solid #ccc; padding: 4px 7px; text-align: center; }
+    .highlight { background: #FFF7A2 !important; }
+    .statebox { background: #f4f4f4; border: 1px solid #888; padding: 8px 12px; margin-bottom: 8px; font-size: 15px; }
+    button { margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <h2>Small Example Processor Emulator</h2>
+  <div class="flex">
+    <!-- CODE ENTRY -->
+    <div class="col" style="flex:1">
+      <strong>Assembly Source</strong>
+      <textarea id="assembler-in" rows="7" placeholder="LD [02], r0&#10;ADD r2, r0, r1&#10;ST r2, [10]"></textarea>
+      <button onclick="assemble()">Assemble → Program Memory</button>
+
+      <strong>Machine Code (hex, space/comma/return separated)</strong>
+      <textarea id="machine-in" rows="4" placeholder="00 01 a1 12 10 c0"></textarea>
+      <button onclick="loadMachineCode()">Load → Program Memory</button>
+    </div>
+    <!-- MEMORY & STATE -->
+    <div class="col" style="flex:1">
+      <div>
+        <strong>Program Memory</strong>
+        <table id="prog-mem-table"></table>
+      </div>
+      <div>
+        <strong>Data Memory</strong>
+        <table id="data-mem-table"></table>
+      </div>
+    </div>
+    <!-- CONTROL & REGISTERS -->
+    <div class="col" style="flex:0.8">
+      <div class="statebox" style="font-size:1rem">
+        <div><strong>Registers</strong></div>
+        <div id="regs"></div>
+        <div><strong>PC:</strong> <span id="pc"></span> 
+        | <strong>Status/Flags:</strong> <span id="flags"></span></div>
+      </div>
+      <div>
+        <button onclick="step()">Step</button>
+        <button onclick="run()">Run</button>
+        <button onclick="animate()">Animate</button>
+        <button onclick="reset()">Reset</button>
+        <label style="margin-left:8px;font-size:0.89rem">Anim delay (ms): 
+          <input id="anim-delay" type="number" style="width:48px" value="400"/>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === CPU State ===
+    const PMEM_SIZE = 32, DMEM_SIZE = 32;
+    let pmem = new Uint8Array(PMEM_SIZE).fill(0);
+    let dmem = new Uint8Array(DMEM_SIZE).fill(0);
+    let regs = [0,0,0,0]; // r0, r1, r2, r3
+    let flags = { Z:false, C:false };
+    let pc = 0, halted = false;
+    let running = false, animTimer = null;
+
+    function reset() {
+      pmem.fill(0); dmem.fill(0); 
+      regs = [0,0,0,0]; flags = { Z:false, C:false }; pc=0; halted=false;
+      updateAll();
+      if (animTimer) clearInterval(animTimer);
+      running = false;
+    }
+
+    // === INSTRUCTION ENCODING ===
+    // Each instruction is 1 byte.
+    function disasm(instr, addr=0) {
+      let b = instr;
+      let op = (b&0xC0)>>6;
+      if(op===0) { // load/store
+        let regid = b & 0x03; // r0-r3
+        let ld = ((b&0x3C)>>2);
+        if ((b&0x20)===0) { // load [operand] to reg
+          return `LD [${toHex(ld)}], r${regid}`;
+        } else { // store reg to [operand]
+          return `ST r${regid}, [${toHex(ld)}]`;
+        }
+      } else if (op===1) { // store (bit 5=1)
+        let regid = b & 0x03;
+        let st = ((b&0x3C)>>2);
+        return `ST r${regid}, [${toHex(st)}]`;
+      } else if (op===2) { // add
+        let z = (b >> 4) & 0x03, x = (b >> 2) & 0x03, y = b&0x03;
+        return `ADD r${z}, r${x}, r${y}`;
+      } else if (op===3) { // jump
+        let addr = b & 0x3F;
+        return `JMP ${toHex(addr)}`;
+      } else {
+        return `UNK`;
+      }
+    }
+
+    function toHex(x, pad=2) { return x.toString(16).toUpperCase().padStart(pad,'0'); }
+    // --- Assembly Parsing ---
+    function assemble() {
+      let src = document.getElementById("assembler-in").value.trim().split(/\n/);
+      let out = [];
+      for (let line of src) {
+        line = line.replace(/(;|#).*$/, '').trim(); if (!line) continue;
+        let m;
+        if (m=line.match(/^LD\s*\[\s*([^\]]+)\s*\],\s*r([0-3])$/i)) {
+          let op = parseInt(m[1],16);
+          let regid = parseInt(m[2]);
+          let instr = (0x00) | ((op&0x0F)<<2) | (regid&0x03);
+          out.push(instr);
+        }
+        else if (m=line.match(/^ST\s*r([0-3])\s*,\s*\[\s*([^\]]+)\s*\]$/i)) {
+          let regid = parseInt(m[1]);
+          let op = parseInt(m[2],16);
+          let instr = (0x10) | ((op&0x0F)<<2) | (regid&0x03);
+          out.push(instr);
+        }
+        else if (m=line.match(/^ADD\s*r([0-3])\s*,\s*r([0-3])\s*,\s*r([0-3])$/i)) {
+          let z = parseInt(m[1]), x = parseInt(m[2]), y = parseInt(m[3]);
+          let instr = 0x80 | ((z&0x03)<<4) | ((x&0x03)<<2) | (y&0x03);
+          out.push(instr);
+        }
+        else if (m=line.match(/^JMP\s*([0-9A-F]+)$/i)) {
+          let addr = parseInt(m[1],16);
+          let instr = 0xC0 | (addr&0x3F);
+          out.push(instr);
+        } else {
+          alert('Cannot parse: ' + line);
+          return;
+        }
+      }
+      // Load to pmem
+      pmem.fill(0);
+      out.forEach((v,i)=>pmem[i]=v);
+      pc=0; halted=false;
+      updateAll();
+    }
+
+    function loadMachineCode() {
+      let mc = document.getElementById('machine-in').value.trim().split(/[\s,]+/).filter(x=>x);
+      if (mc.some(x=>!/^[0-9A-Fa-f]{1,2}$/.test(x))) {
+        alert("Please enter hex bytes, e.g. 00 01 A1 12 10 C0");
+        return;
+      }
+      let arr = mc.map(x=>parseInt(x,16));
+      pmem.fill(0);
+      arr.forEach((v,i)=>pmem[i]=v);
+      pc=0; halted=false;
+      updateAll();
+    }
+
+    // === UI UPDATES ===
+    function updateAll() {
+      // Program Mem
+      let t = '<tr><th>Addr</th><th>Hex</th><th>Disasm</th></tr>';
+      for(let i=0;i<PMEM_SIZE;++i){
+        let c = (i===pc && !halted) ? 'highlight' : '';
+        t+= `<tr class='${c}'><td>${toHex(i)}</td><td>${toHex(pmem[i])}</td><td>${disasm(pmem[i],i)}</td></tr>`;
+      }
+      document.getElementById("prog-mem-table").innerHTML = t;
+
+      // Data Mem (editable)
+      let d = '<tr><th>Addr</th><th>Hex</th><th>Dec</th></tr>';
+      for(let i=0;i<DMEM_SIZE;++i){
+        d+= `<tr><td>${toHex(i)}</td><td contenteditable='true' onblur='editDmem(${i}, this.innerText)'>${toHex(dmem[i])}</td><td>${dmem[i]}</td></tr>`;
+      }
+      document.getElementById("data-mem-table").innerHTML = d;
+
+      // Registers
+      let rs = regs.map((v,i)=>`r${i}: ${toHex(v)}`).join(' | ');
+      document.getElementById("regs").innerText = rs;
+      document.getElementById("pc").innerText = toHex(pc);
+      document.getElementById("flags").innerText = Object.entries(flags).map(e=>e[0]+":"+(e[1]?"1":"0")).join(' ');
+    }
+    function editDmem(i, v) {
+      let x = parseInt(v,16);
+      if (isNaN(x) || x<0 || x>255) x = 0;
+      dmem[i]=x;
+      updateAll();
+    }
+
+    // === CPU EXECUTION ===
+    function step() {
+      if (pc<0 || pc>=PMEM_SIZE) { halted=true; updateAll(); return;}
+      execInstr(pmem[pc]);
+      updateAll();
+    }
+    function execInstr(b) {
+      let op = (b&0xC0)>>6;
+      if (op===0) { // LD/ST (LD: bit5=0, ST: bit5=1)
+        let isStore = (b&0x20)!==0;
+        let regid = b&0x03;
+        let addr = (b>>2)&0x0F;
+        if (isStore) {
+          dmem[addr] = regs[regid];
+        } else {
+          regs[regid] = dmem[addr];
+        }
+        pc++;
+      }
+      else if (op===2) { // ADD
+        let z = (b>>4)&0x03, x = (b>>2)&0x03, y = b&0x03;
+        let s = regs[x] + regs[y];
+        flags.C = s>255;
+        regs[z] = s&0xFF;
+        flags.Z = (regs[z]===0);
+        pc++;
+      }
+      else if (op===3) { // JMP
+        let addr = b&0x3F;
+        pc = addr;
+      }
+      else {
+        // Unknown/illegal
+        pc++;
+      }
+    }
+    function run() {
+      if (animTimer) clearInterval(animTimer);
+      running = true;
+      while(pc<PMEM_SIZE && !halted && running) {
+        execInstr(pmem[pc]);
+      }
+      updateAll();
+      running = false;
+    }
+    function animate() {
+      if (animTimer) clearInterval(animTimer);
+      running = true;
+      animTimer = setInterval(()=>{
+        if(!running || pc>=PMEM_SIZE || halted){
+          clearInterval(animTimer); running = false; return;
+        } 
+        step();
+      },parseInt(document.getElementById("anim-delay").value)||400);
+    }
+
+    // Initialize
+    reset();
+  </script>
+</body>
+</html>

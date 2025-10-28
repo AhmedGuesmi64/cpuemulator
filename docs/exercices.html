@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>CP Emulator — Exercises</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="stylesheet" href="../css/theme.css"/>
+</head>
+<body>
+  <div class="app">
+    <nav class="topnav card">
+        <div class="topnav-left">
+          <a href="../index.html" class="topnav-link">Home</a>
+          <a href="../editor.html" class="topnav-link">Editor</a>
+          <a href="../emulator.html" class="topnav-link">Emulator</a>
+          <a href="README.html" class="topnav-link">Docs</a>
+        </div>
+        <div class="topnav-right">
+          <button class="btn secondary" id="nav-back">Back</button>
+          <button class="btn secondary" id="nav-forward">Forward</button>
+        </div>
+      </nav>
+      
+    <div class="header">
+      <div class="brand">CP</div>
+      <div>
+        <div class="title">CP Emulator — Exercises</div>
+        <div class="subtitle">Short lab exercises and expected answers</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Exercise 1 — Simple add</h3>
+      <p>Goal: Add values at dmem[00] and dmem[01], store result in dmem[02].</p>
+      <pre class="code">LD [00], r0
+LD [01], r1
+ADD r2, r0, r1
+ST r2, [02]</pre>
+      <p class="note">Set data memory 00=0x05 and 01=0x07, assemble and run. Expect dmem[02]=0x0C.</p>
+
+      <h3>Exercise 2 — Carry and zero flags</h3>
+      <p>Set dmem[00]=0xFF and dmem[01]=0x02 and run the same program as Exercise 1. Expect r2=0x01, Carry=1.</p>
+
+      <h3>Exercise 3 — Simple loop (advanced)</h3>
+      <p>Use data memory as a counter and loop until zero. Hint: emulate decrement by adding 0xFF to a register then store back. Requires careful sequence of LD/ADD/ST/JMP.</p>
+    </div>
+  </div>
+  <script src="js/navigationMenuScript.js"></script>
+
+</body>
+</html>

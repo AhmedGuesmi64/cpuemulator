@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>CP Emulator — README</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="stylesheet" href="../css/theme.css"/>
+</head>
+<body>
+  <div class="app">
+    <nav class="topnav card">
+        <div class="topnav-left">
+          <a href="../index.html" class="topnav-link">Home</a>
+          <a href="../editor.html" class="topnav-link">Editor</a>
+          <a href="../emulator.html" class="topnav-link">Emulator</a>
+          <a href="README.html" class="topnav-link">Docs</a>
+        </div>
+        <div class="topnav-right">
+          <button class="btn secondary" id="nav-back">Back</button>
+          <button class="btn secondary" id="nav-forward">Forward</button>
+        </div>
+      </nav>
+      
+    <div class="header">
+      <div class="brand">CP</div>
+      <div>
+        <div class="title">CP Emulator — Documentation</div>
+        <div class="subtitle">Architecture, instruction set, usage</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Overview</h3>
+      <p class="note">A tiny browser-based emulator illustrating fetch-decode-execute for a minimal 8-bit CPU.</p>
+
+      <h4>Key components</h4>
+      <ul>
+        <li><strong>Program memory</strong>: 32 bytes (pmem)</li>
+        <li><strong>Data memory</strong>: 32 bytes (dmem)</li>
+        <li><strong>Registers</strong>: r0..r3 (8-bit)</li>
+        <li><strong>PC</strong>: program counter</li>
+        <li><strong>Flags</strong>: Zero (Z), Carry (C)</li>
+      </ul>
+
+      <h4>Instruction encoding (1 byte each)</h4>
+      <ul>
+        <li><strong>LD [addr], rN</strong>: opcode bits 7..6 = 00, bit5=0, bits4..2 = addr (masked to 4 bits), bits1..0 = reg id</li>
+        <li><strong>ST rN, [addr]</strong>: opcode bits 7..6 = 00, bit5=1, operand/reg same layout as LD</li>
+        <li><strong>ADD rZ, rX, rY</strong>: opcode bits 7..6 = 10, bits5..4 = rZ, bits3..2 = rX, bits1..0 = rY</li>
+        <li><strong>JMP addr</strong>: opcode bits 7..6 = 11, bits5..0 = 6-bit address</li>
+      </ul>
+
+      <h4>How to use</h4>
+      <ol>
+        <li>Open <code>editor.html</code>.</li>
+        <li>Type assembly into the Assembly Source box or paste hex into Machine Code box.</li>
+        <li>Click Assemble or Load to populate Program Memory (preview shown on page).</li>
+        <li>Edit Data Memory cells, then Step / Run / Animate using the controls.</li>
+      </ol>
+
+      <h4>Demo scenarios</h4>
+      <ul>
+        <li>Simple add and store: load two data values, ADD them into r2, ST r2 into a data cell.</li>
+        <li>Carry wrap demo: add 0xFF + 0x02 to show Carry flag and wrapping.</li>
+        <li>Self-modifying code: load machine hex, then edit pmem or re-load different hex to show changed behavior.</li>
+      </ul>
+    </div>
+  </div>
+  <script src="js/navigationMenuScript.js"></script>
+  
+</body>
+</html>
