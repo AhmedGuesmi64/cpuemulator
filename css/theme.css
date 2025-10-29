@@ -149,7 +149,8 @@
   .editor .card{ border-left:4px solid transparent; transition:box-shadow .15s, border-left-color .15s; }
   .editor .card:focus-within, .editor .card:hover{ box-shadow:0 12px 30px rgba(6,120,115,0.12); border-left-color:var(--teal); }
   .notes-highlight { background: linear-gradient(90deg, rgba(61,223,230,0.03), rgba(24,180,162,0.02)); border:1px solid rgba(61,223,230,0.04); box-shadow: 0 8px 20px rgba(12,60,58,0.12); }
-  
+  /* subtle saved badge */
+  #notes-autosave-status { font-weight:700; color:var(--muted-text); }
   /* Responsive */
   @media (max-width:920px){
     .row { flex-direction:column; }
