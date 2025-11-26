@@ -32,94 +32,190 @@
       <!-- LEFT: Controls -->
       <div class="pane">
         <div class="top-controls card">
-          <div>
-            <strong>Assembler (optional)</strong>
-            <textarea id="assembler-in" class="input" rows="6" placeholder="LD [00], r0&#10;LD [01], r1..."></textarea>
-            <div style="margin-top:8px">
-              <button class="btn" onclick="assemble()">Assemble → Program Memory</button>
-              <button class="btn secondary" onclick="clearSource()">Clear</button>
-              <button class="btn secondary" onclick="loadSample()">Load Example</button>
+          <div class="panel-block">
+            <div class="panel-block__header">
+              <div>
+                <strong>Machine Code (hex)</strong>
+                <div class="panel-block__sub">Paste bytes or load a demo, then push to program memory.</div>
+              </div>
+            </div>
+            <textarea id="machine-in" class="input" rows="6" placeholder="00 00 01 31 B4 02 32 BB 43 33 C0"></textarea>
+            <div class="button-row">
+              <button class="btn secondary" onclick="loadMachineCode()">Load → Program Memory</button>
+              <button class="btn ghost" onclick="loadExercise22()">Demo: Exercise 22</button>
+              <button class="btn ghost" onclick="loadExercise23()">Demo: Exercise 23</button>
             </div>
             <input id="file-input" type="file" accept=".asm,.s,.txt,.hex" style="display:none" />
-            <button class="btn secondary" onclick="document.getElementById('file-input').click()">Import .asm / .hex</button>
-
-            <!-- Drag-and-drop target (place near the top of the emulator page) -->
-            <div id="drop-target" class="card" style="padding:10px;margin-top:8px;text-align:center;color:var(--muted-text)">
-              Drag .asm or .hex files here to load them into the emulator
-            </div>
+            <button class="btn secondary" style="margin-top:8px" onclick="document.getElementById('file-input').click()">Import .asm / .hex</button>
           </div>
 
-          <div>
-            <strong>Machine Code (hex)</strong>
-            <textarea id="machine-in" class="input" rows="6" placeholder="00 01 A1 12 10 C0"></textarea>
-            <div style="margin-top:8px">
-              <button class="btn secondary" onclick="loadMachineCode()">Load → Program Memory</button>
+          <div class="panel-block">
+            <div class="panel-block__header">
+              <div>
+                <strong>Assembler (optional)</strong>
+                <div class="panel-block__sub">Write mnemonics; assemble to update program memory and hex view.</div>
+              </div>
+            </div>
+            <textarea id="assembler-in" class="input" rows="6" placeholder="LD [30], r0&#10;LD [31], r1&#10;ADD r3, r1, r0"></textarea>
+            <div class="button-row">
+              <button class="btn" onclick="assemble()">Assemble → Program Memory</button>
+              <button class="btn secondary" onclick="clearSource()">Clear</button>
+              <button class="btn ghost" onclick="loadExercise22()">Demo: Exercise 22</button>
+              <button class="btn ghost" onclick="loadExercise23()">Demo: Exercise 23</button>
+            </div>
+            <div id="drop-target" class="card drop-card">
+              Drag any .asm / .hex file here to load it instantly
             </div>
           </div>
         </div>
 
         <div class="sep"></div>
 
-        <div class="card notes-highlight" tabindex="0">
-          <strong>Notes</strong>
-          <div class="code" contenteditable="true" id="notes">Use Step to execute single instruction; Animate to watch automatic execution.</div>
-          <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-            <button class="btn" id="notes-save-btn">Save Notes</button>
-            <button class="btn secondary" id="notes-export-btn">Export .txt</button>
-            <input id="notes-file-input" type="file" accept=".txt" style="display:none"/>
-            <button class="btn secondary" id="notes-import-btn">Import .txt</button>
-            <label class="note" style="margin-left:8px">Autosave: <span id="notes-autosave-status">On</span></label>
+        <div class="card sample-card">
+          <div class="card-heading">
+            <strong>Sample Programs</strong>
+            <span class="note">Pulled from <code>/tests</code> so you can demo quickly.</span>
           </div>
-          
+          <div class="sample-row">
+            <div>
+              <div class="sample-name">Add Two Bytes</div>
+              <div class="sample-desc">Adds [0x20] + [0x21] and writes the sum to 0x22.</div>
+            </div>
+            <div class="sample-actions">
+              <button class="btn ghost" onclick="loadSampleTest('add_two','asm')">ASM</button>
+              <button class="btn ghost" onclick="loadSampleTest('add_two','hex')">HEX</button>
+            </div>
+          </div>
+          <div class="sample-row">
+            <div>
+              <div class="sample-name">Store & Mix</div>
+              <div class="sample-desc">Copies input to 0x40, sums two bytes, stores at 0x41.</div>
+            </div>
+            <div class="sample-actions">
+              <button class="btn ghost" onclick="loadSampleTest('store_and_mix','asm')">ASM</button>
+              <button class="btn ghost" onclick="loadSampleTest('store_and_mix','hex')">HEX</button>
+            </div>
+          </div>
+          <div class="sample-row">
+            <div>
+              <div class="sample-name">Looping Accumulator</div>
+              <div class="sample-desc">Keeps adding [0x51] into [0x50] forever (great for tracing).</div>
+            </div>
+            <div class="sample-actions">
+              <button class="btn ghost" onclick="loadSampleTest('loop_sum','asm')">ASM</button>
+              <button class="btn ghost" onclick="loadSampleTest('loop_sum','hex')">HEX</button>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- MIDDLE: Program / Data mem -->
-      <div class="pane card emulator-pane">
-        <div style="margin-bottom:8px">
-          <strong>Program Memory</strong>
-          <table id="prog-mem-table" class="table" style="margin-top:8px"></table>
+        <div class="pane card emulator-pane">
+          <div class="memory-grid">
+            <div class="memory-section">
+              <div class="memory-section__header">
+                <div>
+                  <strong>Program Memory</strong>
+                  <div class="memory-section__sub">Instructions &amp; disassembly</div>
+                </div>
+                <span class="badge">256 bytes</span>
+              </div>
+              <div class="table-wrapper">
+                <table id="prog-mem-table" class="table"></table>
+              </div>
+            </div>
+            <div class="memory-section">
+              <div class="memory-section__header">
+                <div>
+                  <strong>Data Memory</strong>
+                  <div class="memory-section__sub">Live RAM contents</div>
+                </div>
+                <span class="badge">256 bytes</span>
+              </div>
+              <div class="table-wrapper">
+                <table id="data-mem-table" class="table"></table>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style="margin-top:12px">
-          <strong>Data Memory</strong>
-          <table id="data-mem-table" class="table" style="margin-top:8px"></table>
-        </div>
-      </div>
 
       <!-- RIGHT: Registers & controls -->
-      <div class="pane" style="max-width:320px">
-        <div class="card">
-          <div><strong>Registers</strong></div>
-          <div id="regs" class="regs" style="margin:8px 0">r0:00 | r1:00 | r2:00 | r3:00</div>
-          <div class="kv"><strong>PC:</strong><div id="pc" style="min-width:48px">00</div><strong style="margin-left:8px">Flags:</strong><div id="flags" class="note" style="min-width:90px;margin-left:6px">Z:0 C:0</div></div>
+      <div class="pane sidebar-pane">
+        <div class="card status-card">
+          <div class="card-heading">
+            <strong>CPU Status</strong>
+            <span id="run-state" class="state-pill state-pill--idle">Ready</span>
+          </div>
+          <div class="status-grid">
+            <div class="status-chip">
+              <span class="status-label">PC</span>
+              <span class="status-value" id="pc">00</span>
+            </div>
+            <div class="status-chip">
+              <span class="status-label">Next</span>
+              <span class="status-value" id="next-pc">--</span>
+            </div>
+            <div class="status-chip">
+              <span class="status-label">Flags</span>
+              <span class="status-value" id="flags">Z:0 C:0</span>
+            </div>
+          </div>
+          <div id="regs" class="reg-grid">
+            <div class="reg-box"><strong>r0</strong><div id="reg0" class="reg-val">00</div></div>
+            <div class="reg-box"><strong>r1</strong><div id="reg1" class="reg-val">00</div></div>
+            <div class="reg-box"><strong>r2</strong><div id="reg2" class="reg-val">00</div></div>
+            <div class="reg-box"><strong>r3</strong><div id="reg3" class="reg-val">00</div></div>
+          </div>
         </div>
 
-        <div style="height:12px"></div>
-
-        <div class="card">
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="card control-card">
+          <div class="button-grid">
             <button class="btn" onclick="step()">Step</button>
             <button class="btn" onclick="run()">Run</button>
             <button class="btn" onclick="animateExec()">Animate</button>
-            <button class="btn secondary" onclick="reset()">Reset</button>
+            <button class="btn secondary" onclick="restart()">Restart</button>
+            <button class="btn secondary" onclick="reset()">Reset All</button>
             <button class="btn secondary" onclick="stop()">Stop</button>
           </div>
-          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-            <label style="font-size:13px;color:var(--muted-text)">Anim delay (ms):</label>
-            <input id="anim-delay" type="number" class="input" value="400" style="width:84px;padding:8px"/>
+          <div class="delay-row">
+            <label>Anim delay (ms)</label>
+            <input id="anim-delay" type="number" class="input" value="400" />
           </div>
         </div>
 
-        <div style="height:12px"></div>
+        <div class="card trace-card">
+          <div class="trace-header">
+            <strong>Execution Trace</strong>
+            <div class="mode-toggle">
+              <button id="trace-mode-asm" class="active" onclick="setTraceMode('asm')">Assembly</button>
+              <button id="trace-mode-hex" onclick="setTraceMode('hex')">Machine</button>
+            </div>
+          </div>
+          <div id="trace" class="trace-body"></div>
+        </div>
 
-        <div class="card">
-          <strong>Execution Trace</strong>
-          <div id="trace" style="margin-top:8px; max-height:200px; overflow:auto; font-family:var(--mono); font-size:13px; color:var(--muted-text)"></div>
+        <div class="card legend-card">
+          <strong>Legend</strong>
+          <div class="legend-list">
+            <span style="background:rgba(0,0,255,0.22);padding:2px 6px;">Current (Blue)</span> – instruction being executed<br>
+            <span style="background:rgba(255,0,0,0.18);padding:2px 6px;">Previous (Red)</span> – instruction just executed<br>
+            <span style="background:rgba(0,255,0,0.18);padding:2px 6px;">Next (Green)</span> – instruction that will execute next<br>
+            <span style="background:rgba(61,223,230,0.20);padding:2px 6px;">Teal</span> – memory write<br>
+            <span style="background:rgba(24,180,162,0.18);padding:2px 6px;">Greenish</span> – memory read<br>
+            <span style="background:rgba(61,130,255,0.25);padding:2px 6px;">Blue flash</span> – register update
+          </div>
+          <div style="margin-top:10px; text-align:right;">
+            <button class="btn secondary" id="highlight-toggle-btn">Hide prev/next highlight</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
   <script src="js/navigationMenuScript.js"></script>
-  <script src="js/emulatorLogic.js"></script>
+  <script src="js/coreState.js"></script>
+  <script src="js/assemblerModule.js"></script>
+  <script src="js/executionModule.js"></script>
+  <script src="js/uiModule.js"></script>
+  <script src="js/appBindings.js"></script>
 </body>
 </html>
