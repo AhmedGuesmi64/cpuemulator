@@ -1,6 +1,6 @@
 # Small Lecture Processor Emulator
 
-Browser-based toolchain that mirrors Prof. Widmann’s “Small Example Processor” from [Status Ahmed 2025‑10‑29](docs/Status%20Ahmed%202025-10-29-1.pdf). It pairs a compact assembler with a live emulator so students can write mnemonics, assemble to machine code, and watch the fetch–decode–execute cycle with animated highlights.
+Browser-based toolchain that mirrors Prof. Widmann’s “Small Example Processor” from. It pairs a compact assembler with a live emulator so students can write mnemonics, assemble to machine code, and watch the fetch–decode–execute cycle with animated highlights.
 
 ## Features
 
