@@ -1,54 +1,144 @@
 // uiModule.js
 // keeps the DOM barely alive without letting the emulator implode
+//good luck trying to bebug this mess 
 (function(coreTarget){
   const CPU = coreTarget.CPU;
   if(!CPU) throw new Error('CPU core missing.');
 
   const { state, utils, hooks } = CPU;
+  let memoryViewMode = 'unified'; // 'unified' or 'split'
+
+  function getCurrentInstructionContext(){
+    if(state.pc < 0 || state.pc >= CPU.config.MEM_SIZE) return null;
+    const opcode = state.mem[state.pc];
+    if(typeof opcode === 'undefined') return null;
+    const type = (opcode >>> 6) & 0x03;
+    const op2 = (opcode >>> 4) & 0x03;
+    const op1 = (opcode >>> 2) & 0x03;
+    const op0 = opcode & 0x03;
+    const ctx = {
+      type,
+      regDest: null,
+      regSources: [],
+      dataOperands: [],
+      immediateRows: [],
+      jumpTargets: []
+    };
+    const operandRow = utils.wrapAddr(state.pc + 1);
+
+    if(type === CPU.config.ISA_TYPE.LOAD){
+      const addr = state.mem[operandRow] ?? 0;
+      ctx.dataOperands.push(addr);
+      ctx.regDest = op0;
+      ctx.immediateRows.push(operandRow);
+    } else if(type === CPU.config.ISA_TYPE.STORE){
+      const addr = state.mem[operandRow] ?? 0;
+      ctx.dataOperands.push(addr);
+      ctx.regSources.push(op0);
+      ctx.immediateRows.push(operandRow);
+    } else if(type === CPU.config.ISA_TYPE.ADD){
+      ctx.regDest = op2;
+      ctx.regSources.push(op1, op0);
+    } else if(type === CPU.config.ISA_TYPE.JMP){
+      const target = opcode & 0x3F;
+      ctx.jumpTargets.push(target);
+    }
+
+    return ctx;
+  }
 
   /**
    * Re-render memory tables, registers, PC, and flag badges.
    * Called after almost every state mutation.
+   * 
+   * don't you love front-end development? as a mattter of fact this fucntion is so fucking good I can barely read it 
    */
   function updateAll(){
-    const pmEl = document.getElementById('prog-mem-table');
-    if(pmEl){
-      let rows = '<tr><th>Addr</th><th>Hex</th><th>Dec</th><th>Disasm</th></tr>';
-      for(let i=0;i<CPU.config.MEM_SIZE;i++){
-        const isCurrent = (i === state.pc);
-        const showPrevNext = CPU.highlight.enabled;
-        const isPrev = showPrevNext && state.prevPc !== null && i === state.prevPc;
-        const isNext = showPrevNext && state.nextPc !== null && i === state.nextPc;
-        const cls = isCurrent ? 'pm-current' :
-          isPrev ? 'pm-prev' :
-          isNext ? 'pm-next' : '';
+    const instrCtx = getCurrentInstructionContext();
+    const dataOperandSet = new Set(instrCtx?.dataOperands || []);
+    const immRowSet = new Set(instrCtx?.immediateRows || []);
+    const jumpTargetSet = new Set(instrCtx?.jumpTargets || []);
+    const regSourceSet = new Set(instrCtx?.regSources || []);
 
-        rows += `<tr class="${cls}">
-          <td>${utils.toHex(i)}</td>
-          <td contenteditable="true" onblur="editMem(${i}, this.innerText)">${utils.toHex(state.mem[i])}</td>
-          <td>${state.mem[i]}</td>
-          <td>${(CPU.assembler?.disasm(i)) || '??'}</td>
-        </tr>`;
-      }
-      pmEl.innerHTML = rows;
-    }
+    if(memoryViewMode === 'unified'){
+      const unifiedEl = document.getElementById('unified-mem-table');
+      if(unifiedEl){
+        let rows = '<tr><th>Addr</th><th>Hex</th><th>Dec</th><th>Disasm</th></tr>';
+        for(let i=0;i<CPU.config.MEM_SIZE;i++){
+          const isCurrent = (i === state.pc);
+          const showPrevNext = CPU.highlight.enabled;
+          const isPrev = showPrevNext && state.prevPc !== null && i === state.prevPc;
+          const isNext = showPrevNext && state.nextPc !== null && i === state.nextPc;
+          const classes = [];
+          if(isCurrent) classes.push('pm-current');
+          else if(isPrev) classes.push('pm-prev');
+          else if(isNext) classes.push('pm-next');
+          if(immRowSet.has(i)) classes.push('pm-operand-byte');
+          if(jumpTargetSet.has(i)) classes.push('pm-target');
+          if(dataOperandSet.has(i)) classes.push('dm-operand');
+          const cls = classes.join(' ');
 
-    const dmEl = document.getElementById('data-mem-table');
-    if(dmEl){
-      let rows = '<tr><th>Addr</th><th>Hex</th><th>Dec</th></tr>';
-      for(let i=0;i<CPU.config.MEM_SIZE;i++){
-        rows += `<tr>
-          <td>${utils.toHex(i)}</td>
-          <td contenteditable="true" onblur="editMem(${i}, this.innerText)">${utils.toHex(state.mem[i])}</td>
-          <td>${state.mem[i]}</td>
-        </tr>`;
+          rows += `<tr class="${cls}">
+            <td>${utils.toHex(i)}</td>
+            <td contenteditable="true" onblur="editMem(${i}, this.innerText)">${utils.toHex(state.mem[i])}</td>
+            <td>${state.mem[i]}</td>
+            <td>${(CPU.assembler?.disasm(i)) || '??'}</td>
+          </tr>`;
+        }
+        unifiedEl.innerHTML = rows;
       }
-      dmEl.innerHTML = rows;
+    } else {
+      const pmEl = document.getElementById('prog-mem-table');
+      if(pmEl){
+        let rows = '<tr><th>Addr</th><th>Hex</th><th>Dec</th><th>Disasm</th></tr>';
+        for(let i=0;i<CPU.config.MEM_SIZE;i++){
+          const isCurrent = (i === state.pc);
+          const showPrevNext = CPU.highlight.enabled;
+          const isPrev = showPrevNext && state.prevPc !== null && i === state.prevPc;
+          const isNext = showPrevNext && state.nextPc !== null && i === state.nextPc;
+          const classes = [];
+          if(isCurrent) classes.push('pm-current');
+          else if(isPrev) classes.push('pm-prev');
+          else if(isNext) classes.push('pm-next');
+          if(immRowSet.has(i)) classes.push('pm-operand-byte');
+          if(jumpTargetSet.has(i)) classes.push('pm-target');
+          const cls = classes.join(' ');
+
+          rows += `<tr class="${cls}">
+            <td>${utils.toHex(i)}</td>
+            <td contenteditable="true" onblur="editMem(${i}, this.innerText)">${utils.toHex(state.mem[i])}</td>
+            <td>${state.mem[i]}</td>
+            <td>${(CPU.assembler?.disasm(i)) || '??'}</td>
+          </tr>`;
+        }
+        pmEl.innerHTML = rows;
+      }
+
+      const dmEl = document.getElementById('data-mem-table');
+      if(dmEl){
+        let rows = '<tr><th>Addr</th><th>Hex</th><th>Dec</th></tr>';
+        for(let i=0;i<CPU.config.MEM_SIZE;i++){
+          const cls = dataOperandSet.has(i) ? 'dm-operand' : '';
+          rows += `<tr>
+            <td class="${cls}">${utils.toHex(i)}</td>
+            <td class="${cls}" contenteditable="true" onblur="editMem(${i}, this.innerText)">${utils.toHex(state.mem[i])}</td>
+            <td class="${cls}">${state.mem[i]}</td>
+          </tr>`;
+        }
+        dmEl.innerHTML = rows;
+      }
     }
 
     for(let i=0;i<4;i++){
       const el = document.getElementById(`reg${i}`);
-      if(el) el.innerText = utils.toHex(state.regs[i]);
+      if(el){
+        el.innerText = utils.toHex(state.regs[i]);
+        const box = el.parentElement;
+        if(box && box.classList){
+          box.classList.toggle('reg-dest', instrCtx && instrCtx.regDest === i);
+          box.classList.toggle('reg-source', regSourceSet.has(i));
+        }
+      }
     }
     const pcEl = document.getElementById('pc');
     if(pcEl) pcEl.innerText = utils.toHex(state.pc);
@@ -88,8 +178,8 @@
     const cell = rows[idx].children[1];
     const original = cell.style.background;
     cell.style.transition = 'background .18s';
-    if(mode === 'write') cell.style.background = 'rgba(61,223,230,0.20)';
-    else if(mode === 'read') cell.style.background = 'rgba(24,180,162,0.18)';
+    if(mode === 'write') cell.style.background = 'rgba(61,223,230,0.20)'; //LD: "I'm gonna touch you lil bro"
+    else if(mode === 'read') cell.style.background = 'rgba(24,180,162,0.18)';//ST: "Oil up lil bro"
     setTimeout(()=>{ cell.style.background = original; }, 220);
   }
 
@@ -126,12 +216,34 @@
     if(hexBtn) hexBtn.classList.toggle('active', mode === 'hex');
   }
 
-  /** Keeps the two editor textareas in sync with whatever we just loaded. */
+  function updateMemoryViewButtons(){
+    const unifiedBtn = document.getElementById('mem-view-unified');
+    const splitBtn = document.getElementById('mem-view-split');
+    if(unifiedBtn) unifiedBtn.classList.toggle('active', memoryViewMode === 'unified');
+    if(splitBtn) splitBtn.classList.toggle('active', memoryViewMode === 'split');
+    const unifiedWrap = document.getElementById('unified-wrapper');
+    const splitWrap = document.getElementById('split-wrapper');
+    if(unifiedWrap) unifiedWrap.classList.toggle('hidden', memoryViewMode !== 'unified');
+    if(splitWrap) splitWrap.classList.toggle('hidden', memoryViewMode !== 'split');
+  }
+
+  function setMemoryView(mode = 'unified'){
+    memoryViewMode = (mode === 'split') ? 'split' : 'unified';
+    updateMemoryViewButtons();
+    updateAll();
+  }
+
+  /** Keeps the two editor panes (CodeMirror fallback) in sync with whatever we just loaded. */
   function setEditorBuffers(asmText = '', hexText = ''){
-    const asmEl = document.getElementById('assembler-in');
-    if(asmEl) asmEl.value = asmText.trim();
-    const hexEl = document.getElementById('machine-in');
-    if(hexEl) hexEl.value = hexText.trim();
+    if(CPU.editor){
+      CPU.editor.setAsmText(asmText.trim());
+      CPU.editor.setHexText(hexText.trim());
+    } else {
+      const asmEl = document.getElementById('assembler-in');
+      if(asmEl) asmEl.value = asmText.trim();
+      const hexEl = document.getElementById('machine-in');
+      if(hexEl) hexEl.value = hexText.trim();
+    }
   }
 
   /** One-click way to blank both textareas. */
@@ -232,11 +344,16 @@
     initFileInputs();
     updateHighlightToggleLabel();
     updateTraceModeButtons();
+    updateMemoryViewButtons();
     updateAll();
     const highlightBtn = document.getElementById('highlight-toggle-btn');
     if(highlightBtn){
       highlightBtn.addEventListener('click', toggleHighlightLookahead);
     }
+    const unifiedBtn = document.getElementById('mem-view-unified');
+    const splitBtn = document.getElementById('mem-view-split');
+    if(unifiedBtn) unifiedBtn.addEventListener('click', ()=> setMemoryView('unified'));
+    if(splitBtn) splitBtn.addEventListener('click', ()=> setMemoryView('split'));
   }
 
   CPU.ui = {
@@ -250,6 +367,7 @@
     clearSource,
     updateTraceModeButtons,
     loadSampleTest,
+    setMemoryView,
     init
   };
 })(window);

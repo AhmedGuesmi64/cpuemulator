@@ -1,5 +1,5 @@
 // assemblerModule.js
-// glues together mnemonics, hex goo, and whatever patience I have left
+// glues together mnemonics, hex goo, and all the fun
 (function(coreTarget){
   const CPU = coreTarget.CPU;
   if(!CPU) throw new Error('CPU core vanished before assembler could even complain.');
@@ -37,13 +37,15 @@
   /**
    * Reads the assembler textarea, emits machine bytes,
    * and drops them straight into program memory.
+   * also probably need to change the textarea to data so that I can add autocomplete and stuff
+   * this funciton is longer than a morning's piss it feels so wrong to impliemnt it like this but eh fuck it
    */
   function assemble(){
-    const src = (document.getElementById('assembler-in')?.value || '')
+    const src = (CPU.editor?.getAsmText?.() || '')
       .trim()
       .split(/\n/);
     const output = [];
-
+    //for loop goes brrrr
     for(const raw of src){
       const line = raw.replace(/(;|#).*$/,'').trim();
       if(!line) continue;
@@ -88,7 +90,7 @@
 
         throw new Error('no idea what that line was supposed to be');
       }catch(err){
-        alert(`Assemble tantrum: ${err.message || err} (line: "${line}")`);
+        alert(`Assemble fail: ${err.message || err} (line: "${line}")`);
         return;
       }
     }
@@ -109,12 +111,15 @@
 
   /** Pulls the hex textarea into memory. */
   function loadMachineCode(){
-    const txt = (document.getElementById('machine-in')?.value || '').trim();
+    const txt = (CPU.editor?.getHexText?.() || '').trim();
     if(!txt) return;
     loadMachineCodeFromString(txt);
   }
 
-  /** Accepts a string of bytes (spaces or commas) and loads them verbatim. */
+  /** Accepts a string of bytes (spaces or commas) and loads them verbatim.
+   * 
+   * god bless javascript for having such a great string interpolation system. It's so good I only wanted to throw my pc out like 9000 times only
+   */
   function loadMachineCodeFromString(hexString){
     try{
       const parts = hexString.trim().split(/[\s,]+/).filter(Boolean);
@@ -135,6 +140,7 @@
   /**
    * Utility for sample loaders or fragment loaders.
    * Resets memory, applies any data defaults, and refreshes UI.
+   * sweet jesus this function was a pain in the ass
    */
   function applyProgram(bytes, dataInit = {}, statusMessage = 'Program lobbed into memory'){
     state.mem.fill(0);

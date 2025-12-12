@@ -1,33 +1,107 @@
 /* Top navigation bar */
-.topnav {
+  .topnav {
     display:flex;
-    justify-content:space-between;
     align-items:center;
+    justify-content:space-between;
     gap:12px;
-    padding:10px 14px;
+    padding:12px 16px;
     margin-bottom:14px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
-    border-radius:10px;
-    border: 1px solid rgba(255,255,255,0.03);
+    background: rgba(0,0,0,0.35);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    position:sticky;
+    top:0;
+    z-index:50;
+  }
+  .theme-light .topnav{
+    background: rgba(255,255,255,0.85);
+    border-bottom:1px solid rgba(0,0,0,0.08);
   }
   
   .topnav-left { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .topnav-right { display:flex; gap:8px; align-items:center; }
+  .topnav-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   
   .topnav-link {
     color: var(--cyan);
     font-weight:700;
     text-decoration:none;
-    padding:8px 10px;
+    padding:8px 12px;
     border-radius:8px;
-    transition: background .12s, color .12s;
+    transition: background .12s, color .12s, transform .12s;
   }
-  .topnav-link:hover { background: rgba(61,223,230,0.04); color: var(--teal); }
+  .topnav-link:hover { background: rgba(61,223,230,0.08); color: var(--ink); transform: translateY(-1px); }
   
   .topnav-link.active {
-    background: linear-gradient(90deg, rgba(24,180,162,0.12), rgba(61,223,230,0.06));
+    background: linear-gradient(90deg, rgba(24,180,162,0.18), rgba(61,223,230,0.10));
     color: #002826;
-    box-shadow: 0 8px 18px rgba(8,90,86,0.08);
+    box-shadow: 0 8px 18px rgba(8,90,86,0.12);
+  }
+  .dropdown{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+  }
+  .dropdown-toggle{
+    background: rgba(255,255,255,0.08);
+    color: var(--cyan);
+    border:none;
+    padding:8px 12px;
+    border-radius:8px;
+    font-weight:700;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .dropdown-toggle:hover{
+    background: rgba(61,223,230,0.12);
+    color: var(--ink);
+  }
+  .dropdown-menu{
+    position:absolute;
+    top:110%;
+    left:0;
+    min-width:180px;
+    background: rgba(0,0,0,0.85);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;
+    box-shadow:0 12px 28px rgba(0,0,0,0.35);
+    padding:8px;
+    opacity:0;
+    pointer-events:none;
+    transform: translateY(-4px);
+    transition: opacity .12s ease, transform .12s ease;
+    z-index:60;
+  }
+  .dropdown:hover .dropdown-menu,
+  .dropdown:focus-within .dropdown-menu{
+    opacity:1;
+    pointer-events:auto;
+    transform: translateY(0);
+  }
+  .theme-light .dropdown-menu{
+    background: rgba(255,255,255,0.98);
+    border:1px solid rgba(0,0,0,0.08);
+    box-shadow:0 12px 28px rgba(0,0,0,0.18);
+  }
+  .theme-light .dropdown-item{
+    color: var(--ink);
+  }
+  .theme-light .dropdown-item:hover{
+    background: rgba(21,185,198,0.12);
+    color: var(--ink);
+  }
+  .dropdown-item{
+    display:block;
+    padding:8px 10px;
+    color: var(--ink);
+    text-decoration:none;
+    border-radius:6px;
+    font-weight:600;
+    transition: background .12s;
+  }
+  .dropdown-item:hover{
+    background: rgba(61,223,230,0.10);
+    color: var(--cyan);
   }
   
   /* hide forward/back on small screens if needed */
@@ -50,8 +124,26 @@
     --focus: 0 0 0 4px rgba(24,180,162,0.18);
     --glass-border: 1px solid rgba(255,255,255,0.06);
     --code-bg: rgba(0,0,0,0.35);
+    --editor-bg:#0b1f1f;
     --mono: "SFMono-Regular", "Menlo", "Monaco", "Segoe UI Mono", monospace;
   }
+
+.theme-light{
+    --bg:#f4fbfb;
+    --panel:#ffffff;
+    --muted:#dceff1;
+    --teal:#0a8f80;
+    --cyan:#15b9c6;
+    --accent:#0f8c7e;
+    --ink:#0b1f1f;
+    --muted-text:#5f7c7c;
+    --glass: rgba(0,0,0,0.04);
+    --shadow: 0 6px 20px rgba(0,0,0,0.12);
+    --focus: 0 0 0 3px rgba(21,185,198,0.24);
+    --glass-border: 1px solid rgba(0,0,0,0.06);
+    --code-bg: rgba(0,0,0,0.04);
+    --editor-bg:#f9ffff;
+}
   
   /* Page */
   html,body{
@@ -159,6 +251,22 @@
   color:#002826;
   font-weight:700;
 }
+/* Dark theme for CodeMirror to match the app */
+.CodeMirror{
+  background: #0b1f1f;
+  color: var(--ink);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:8px;
+  height:auto;
+}
+.CodeMirror-gutters{
+  background: #0b1f1f;
+  border-right:1px solid rgba(255,255,255,0.08);
+}
+.CodeMirror-cursor{ border-left:1px solid var(--cyan); }
+.cm-s-material-darker .CodeMirror-linenumber{ color: var(--muted-text); }
+.cm-s-material-darker.CodeMirror{ background:#0b1f1f; }
+  .hidden{ display:none; }
 .trace-entry{
   padding:4px 0;
   border-bottom:1px solid rgba(255,255,255,0.04);
@@ -166,6 +274,7 @@
   font-size:13px;
   color:var(--muted-text);
 }
+.project-card .note{ display:block; margin-top:4px; }
 .trace-entry:last-child{
   border-bottom:none;
 }
@@ -192,6 +301,15 @@
   .table td { padding:8px 10px; border-top:1px solid rgba(255,255,255,0.02); color:var(--ink); vertical-align:middle; position:relative; }
   .table tr.highlight td { background: linear-gradient(90deg, rgba(24,180,162,0.06), rgba(61,223,230,0.02)); box-shadow: inset 6px 0 0 0 var(--teal); padding-left:16px; }
   .table tr.highlight td::before { content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--teal); opacity:0.12; z-index:-1; border-top-left-radius:6px; border-bottom-left-radius:6px; }
+.table tr.pm-operand-byte td{
+  background: rgba(255, 196, 0, 0.12);
+}
+.table tr.pm-target td{
+  background: rgba(180, 61, 223, 0.12);
+}
+.dm-operand{
+  background: rgba(255, 196, 0, 0.15);
+}
 .table-wrapper{
   background: rgba(0,0,0,0.25);
   border:1px solid rgba(255,255,255,0.03);
@@ -351,6 +469,14 @@
     border-radius: 8px;
     text-align: center;
     background: rgba(11,107,107,0.55);
+  }
+  .reg-box.reg-dest{
+    border-color: rgba(61,223,230,0.8);
+    background: rgba(61,223,230,0.25);
+  }
+  .reg-box.reg-source{
+    border-color: rgba(255,196,0,0.8);
+    background: rgba(255,196,0,0.18);
   }
   .reg-val {
     font-family: monospace;

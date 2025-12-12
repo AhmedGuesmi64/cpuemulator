@@ -19,6 +19,7 @@
   /**
    * Everything the pretend CPU needs to remember between steps.
    * Other modules poke this directly, so try not to mutate it blindly.
+   * Update: I did mutate it blindly anyway because JS is weird like that.
    */
   const state = {
     mem: new Uint8Array(MEM_SIZE).fill(0),
@@ -62,7 +63,7 @@
    * Accepts raw numbers, hex with 0x, or bare hex. Throws when nonsense shows up.
    */
   function parseNumberLiteral(token){
-    if(!token) throw new Error('yeah no number provided');
+    if(!token) throw new Error('no number provided');
     const trimmed = token.trim();
     let value;
     if(/^0x[0-9a-f]+$/i.test(trimmed)) value = parseInt(trimmed,16);
@@ -133,6 +134,7 @@
   /**
    * Pushes a trace line to the log, keeping data-* copies of both asm/hex.
    * UI toggles can swap instantly without recomputing anything expensive.
+   * NOTE: would be cool to log the data and do some fun stuff later like filtering and performance and all that jazz
    */
   function formatTimestamp(){
     const d = new Date();
@@ -142,7 +144,9 @@
     const ms = `${d.getMilliseconds()}`.padStart(3,'0');
     return `${hr}:${min}:${sec}.${ms}`;
   }
-
+  // --- main trace logging function ---
+  //I also love this idea cause you can actually use the trace for debugging and stuff that is of course if 
+  //the emulator works as intended
   function logTrace(entry){
     const target = document.getElementById('trace');
     if(!target) return;
@@ -180,7 +184,7 @@
     applyTraceMode();
   }
 
-  // --- highlight switch because apparently color helps me think ---
+  // --- highlight switch because apparently color helps me think call that 'tism moment ---
   const highlight = {
     enabled: true,
     toggle(){
@@ -233,7 +237,7 @@
     }
   };
 
-  /** Wipe RAM, registers, PC, trace – basically puts everything back to zero. */
+  /** Wipe RAM, registers, PC, trace – basically puts everything back to zero. I want to call it the nuclear button but I'm supposed to professional*/
   function resetState(){
     state.mem.fill(0);
     state.regs.forEach((_, i)=> state.regs[i] = 0);

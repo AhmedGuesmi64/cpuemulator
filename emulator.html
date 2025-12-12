@@ -5,20 +5,44 @@
   <title>CP Emulator — Runtime</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
 </head>
+<!-- this html page took too damn long to make I don't even know why -->
 <body>
   <div class="app">
     <nav class="topnav card">
-        <div class="topnav-left">
-          <a href="index.html" class="topnav-link">Home</a>
-          <a href="emulator.html" class="topnav-link">Emulator</a>
-          <a href="docs/README.html" class="topnav-link">Docs</a>
+      <div class="topnav-left">
+        <div class="brand">CP</div>
+        <a href="index.html" class="topnav-link">Home</a>
+        <div class="dropdown">
+          <button class="dropdown-toggle">Pages ▾</button>
+          <div class="dropdown-menu">
+            <a class="dropdown-item" href="emulator.html">Emulator</a>
+            <a class="dropdown-item" href="Editor.html">Editor</a>
+            <a class="dropdown-item" href="docs/README.html">Docs</a>
+            <a class="dropdown-item" href="docs/Status Ahmed 2025-10-29-1.pdf">Status PDF</a>
+          </div>
         </div>
-        <div class="topnav-right">
-          <button class="btn secondary" id="nav-back">Back</button>
-          <button class="btn secondary" id="nav-forward">Forward</button>
+        <div class="dropdown">
+          <button class="dropdown-toggle">Actions ▾</button>
+          <div class="dropdown-menu">
+            <a class="dropdown-item" href="#" onclick="setMemoryView('unified'); return false;">Unified Memory</a>
+            <a class="dropdown-item" href="#" onclick="setMemoryView('split'); return false;">Split Memory</a>
+            <a class="dropdown-item" href="#" onclick="restart(); return false;">Restart</a>
+            <a class="dropdown-item" href="#" onclick="reset(); return false;">Reset All</a>
+            <a class="dropdown-item" href="#" onclick="exportProject(); return false;">Export Project</a>
+            <a class="dropdown-item" href="#" onclick="document.getElementById('project-file-input').click(); return false;">Import Project</a>
+          </div>
         </div>
-      </nav>
+      </div>
+      <div class="topnav-right">
+        <button class="btn secondary" id="nav-back">Back</button>
+        <button class="btn secondary" id="nav-forward">Forward</button>
+        <button class="btn secondary" id="theme-toggle">Light Mode</button>
+      </div>
+    </nav>
       
     <div class="header">
       <div class="brand">CP</div>
@@ -109,31 +133,48 @@
         </div>
       </div>
 
-      <!-- MIDDLE: Program / Data mem -->
+      <!-- MIDDLE: Unified Memory -->
         <div class="pane card emulator-pane">
-          <div class="memory-grid">
-            <div class="memory-section">
-              <div class="memory-section__header">
-                <div>
-                  <strong>Program Memory</strong>
-                  <div class="memory-section__sub">Instructions &amp; disassembly</div>
-                </div>
-                <span class="badge">256 bytes</span>
-              </div>
-              <div class="table-wrapper">
-                <table id="prog-mem-table" class="table"></table>
-              </div>
+          <div class="memory-section__header" style="margin-bottom:12px; align-items:center;">
+            <div>
+              <strong>Memory View</strong>
+              <div class="memory-section__sub">Switch between unified (shared) and split (program/data)</div>
             </div>
-            <div class="memory-section">
-              <div class="memory-section__header">
-                <div>
-                  <strong>Data Memory</strong>
-                  <div class="memory-section__sub">Live RAM contents</div>
+            <div class="mode-toggle" style="gap:6px;">
+              <button id="mem-view-unified" class="active">Unified</button>
+              <button id="mem-view-split">Split</button>
+            </div>
+          </div>
+          <div id="unified-wrapper">
+            <div class="table-wrapper">
+              <table id="unified-mem-table" class="table"></table>
+            </div>
+          </div>
+          <div id="split-wrapper" class="hidden">
+            <div class="memory-grid">
+              <div class="memory-section">
+                <div class="memory-section__header">
+                  <div>
+                    <strong>Program Memory</strong>
+                    <div class="memory-section__sub">Instructions &amp; disassembly</div>
+                  </div>
+                  <span class="badge">256 bytes</span>
                 </div>
-                <span class="badge">256 bytes</span>
+                <div class="table-wrapper">
+                  <table id="prog-mem-table" class="table"></table>
+                </div>
               </div>
-              <div class="table-wrapper">
-                <table id="data-mem-table" class="table"></table>
+              <div class="memory-section">
+                <div class="memory-section__header">
+                  <div>
+                    <strong>Data Memory</strong>
+                    <div class="memory-section__sub">Live RAM contents</div>
+                  </div>
+                  <span class="badge">256 bytes</span>
+                </div>
+                <div class="table-wrapper">
+                  <table id="data-mem-table" class="table"></table>
+                </div>
               </div>
             </div>
           </div>
@@ -194,6 +235,18 @@
           <div id="trace" class="trace-body"></div>
         </div>
 
+        <div class="card project-card">
+          <div class="card-heading">
+            <strong>Project I/O</strong>
+            <span class="note">Save/restore ASM, HEX, memory, and registers</span>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+            <button class="btn secondary" onclick="exportProject()">Export Project</button>
+            <button class="btn secondary" onclick="document.getElementById('project-file-input').click()">Import Project</button>
+            <input id="project-file-input" type="file" accept=".json,.cpuproj.json" style="display:none" onchange="handleProjectImport(event)" />
+          </div>
+        </div>
+
         <div class="card legend-card">
           <strong>Legend</strong>
           <div class="legend-list">
@@ -212,6 +265,16 @@
     </div>
   </div>
   <script src="js/navigationMenuScript.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/simple/simple.min.js"></script>
+  <script src="js/themeToggle.js"></script>
+  <script src="js/coreState.js"></script>
+  <script src="js/assemblerModule.js"></script>
+  <script src="js/executionModule.js"></script>
+  <script src="js/uiModule.js"></script>
+  <script src="js/editorEnhance.js"></script>
+  <script src="js/projectBundle.js"></script>
   <script src="js/coreState.js"></script>
   <script src="js/assemblerModule.js"></script>
   <script src="js/executionModule.js"></script>

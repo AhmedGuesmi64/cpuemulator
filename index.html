@@ -10,13 +10,22 @@
   <div class="app">
     <nav class="topnav card">
         <div class="topnav-left">
-          <a href="index.html" class="topnav-link">Home</a>
-          <a href="emulator.html" class="topnav-link">Emulator</a>
-          <a href="docs/README.html" class="topnav-link">Docs</a>
+          <div class="brand">CP</div>
+          <a href="index.html" class="topnav-link active">Home</a>
+          <div class="dropdown">
+            <button class="dropdown-toggle">Pages ▾</button>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="emulator.html">Emulator</a>
+              <a class="dropdown-item" href="Editor.html">Editor</a>
+              <a class="dropdown-item" href="docs/README.html">Docs</a>
+              <a class="dropdown-item" href="docs/Status Ahmed 2025-10-29-1.pdf">Status PDF</a>
+            </div>
+          </div>
         </div>
         <div class="topnav-right">
           <button class="btn secondary" id="nav-back">Back</button>
           <button class="btn secondary" id="nav-forward">Forward</button>
+          <button class="btn secondary" id="theme-toggle">Light Mode</button>
         </div>
       </nav>
       
@@ -58,12 +67,15 @@
 
       <div class="card" style="width:300px;">
         <h4>Quick links</h4>
-        <div class="kv"><strong>Program mem:</strong><span class="note" style="margin-left:8px">32 bytes</span></div>
-        <div class="kv"><strong>Data mem:</strong><span class="note" style="margin-left:8px">32 bytes</span></div>
-        <div class="kv"><strong>Registers:</strong><span class="note" style="margin-left:8px">r0..r3</span></div>
+        <div class="kv"><strong>Memory:</strong><span class="note" style="margin-left:8px">256 bytes shared (Harvard-to-von Neumann ready)</span></div>
+        <div class="kv"><strong>Registers:</strong><span class="note" style="margin-left:8px">r0–r3 (8-bit)</span></div>
+        <div class="kv"><strong>Instruction set:</strong><span class="note" style="margin-left:8px">LD, ST, ADD, JMP/HALT</span></div>
+        <div class="kv"><strong>Sample tests:</strong><span class="note" style="margin-left:8px"><code>/tests</code> folder (hooked into Emulator UI)</span></div>
+        <div class="kv"><strong>Docs & status:</strong><span class="note" style="margin-left:8px"><a href="docs/Status%20Ahmed%202025-10-29-1.pdf">Latest status PDF</a></span></div>
       </div>
     </div>
     <script src="js/navigationMenuScript.js"></script>
-
+    <script src="js/themeToggle.js"></script>
+  </div>
 </body>
 </html>

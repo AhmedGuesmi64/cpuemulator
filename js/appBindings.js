@@ -5,9 +5,14 @@
   if(!CPU) throw new Error('CPU vanished before bindings, which is really annoying.');
 
   CPU.ui.init();
+  CPU.editor.init();
   CPU.trace.setMode('asm');
   CPU.assembler.tryLoadFromFragment();
-
+  if(CPU.memoryView && CPU.memoryView.renderUnifiedTable){
+    CPU.memoryView.renderUnifiedTable();
+  }
+  //this feels so wrong to do there's probably a better way to do this but eh if it works it works
+  //also this is really weird because js doesn't really support OOP in the traditional sense so this works for now
   Object.assign(coreTarget, {
     assemble: ()=> CPU.assembler.assemble(),
     loadMachineCode: ()=> CPU.assembler.loadMachineCode(),
@@ -25,7 +30,9 @@
     animateExec: ()=> CPU.execution.animateExec(),
     stop: ()=> CPU.execution.stop(),
     reset: ()=> CPU.execution.reset(),
-    restart: ()=> CPU.execution.restart()
+    restart: ()=> CPU.execution.restart(),
+    exportProject: ()=> CPU.projectBundle.exportProject(),
+    handleProjectImport: (ev)=>{ const f = ev.target.files && ev.target.files[0]; if(f) CPU.projectBundle.importProjectFromFile(f); ev.target.value=''; }
   });
 })(window);
 

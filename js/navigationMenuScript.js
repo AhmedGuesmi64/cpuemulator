@@ -1,4 +1,6 @@
 // Topnav: highlight active link and wire Back/Forward buttons
+//this is broken I have to fix it later
+//this function is still broken please help
 (function(){
     // highlight active link based on pathname
     const links = document.querySelectorAll('.topnav-link');

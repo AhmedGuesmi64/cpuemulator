@@ -10,14 +10,22 @@
   <div class="app">
     <nav class="topnav card">
       <div class="topnav-left">
+        <div class="brand">CP</div>
         <a href="index.html" class="topnav-link">Home</a>
-        <a href="editor.html" class="topnav-link">Editor</a>
-        <a href="emulator.html" class="topnav-link">Emulator</a>
-        <a href="docs/README.html" class="topnav-link">Docs</a>
+        <div class="dropdown">
+          <button class="dropdown-toggle">Pages ▾</button>
+          <div class="dropdown-menu">
+            <a class="dropdown-item" href="emulator.html">Emulator</a>
+            <a class="dropdown-item" href="Editor.html">Editor</a>
+            <a class="dropdown-item" href="docs/README.html">Docs</a>
+            <a class="dropdown-item" href="docs/Status Ahmed 2025-10-29-1.pdf">Status PDF</a>
+          </div>
+        </div>
       </div>
       <div class="topnav-right">
         <button class="btn secondary" id="nav-back">Back</button>
         <button class="btn secondary" id="nav-forward">Forward</button>
+        <button class="btn secondary" id="theme-toggle">Light Mode</button>
       </div>
     </nav>
     
@@ -100,6 +108,7 @@
     </div>
   </div>
 <script src="js/navigationMenuScript.js"></script>
+<script src="js/themeToggle.js"></script>
 <script>
 /* Small assembler + preview + export + "open in emulator" using fragment hash hex=... */
 

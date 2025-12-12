@@ -77,6 +77,7 @@
       }
     }
   }
+  //Jesus mary and joesph this function is long and it makes me feel like I should take a shower after writing it
 
   /**
    * Wraps `execInstr` with bounds/exception checks so UI buttons can spam it.
@@ -119,7 +120,7 @@
     state.running = false;
   }
 
-  /** Reads the delay input and falls back to 400ms if users type nonsense. */
+  /** Reads the delay input and falls back to 400ms if users type nonsense. which usually do */
   function getAnimDelay(){
     const el = document.getElementById('anim-delay');
     const v = el ? parseInt(el.value,10) : NaN;
