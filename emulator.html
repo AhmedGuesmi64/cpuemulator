@@ -12,37 +12,68 @@
 <!-- this html page took too damn long to make I don't even know why -->
 <body>
   <div class="app">
-    <nav class="topnav card">
-      <div class="topnav-left">
+    <!-- Primary nav -->
+    <nav class="primary-nav">
+      <div class="nav-left">
         <div class="brand">CP</div>
-        <a href="index.html" class="topnav-link">Home</a>
-        <div class="dropdown">
-          <button class="dropdown-toggle">Pages ▾</button>
-          <div class="dropdown-menu">
-            <a class="dropdown-item" href="emulator.html">Emulator</a>
-            <a class="dropdown-item" href="Editor.html">Editor</a>
-            <a class="dropdown-item" href="docs/README.html">Docs</a>
-            <a class="dropdown-item" href="docs/Status Ahmed 2025-10-29-1.pdf">Status PDF</a>
-          </div>
-        </div>
-        <div class="dropdown">
-          <button class="dropdown-toggle">Actions ▾</button>
-          <div class="dropdown-menu">
-            <a class="dropdown-item" href="#" onclick="setMemoryView('unified'); return false;">Unified Memory</a>
-            <a class="dropdown-item" href="#" onclick="setMemoryView('split'); return false;">Split Memory</a>
-            <a class="dropdown-item" href="#" onclick="restart(); return false;">Restart</a>
-            <a class="dropdown-item" href="#" onclick="reset(); return false;">Reset All</a>
-            <a class="dropdown-item" href="#" onclick="exportProject(); return false;">Export Project</a>
-            <a class="dropdown-item" href="#" onclick="document.getElementById('project-file-input').click(); return false;">Import Project</a>
-          </div>
-        </div>
+        <button class="nav-button" onclick="location.href='index.html'">Home</button>
+        <button class="nav-button" onclick="location.href='docs/README.html'">Docs</button>
       </div>
-      <div class="topnav-right">
-        <button class="btn secondary" id="nav-back">Back</button>
-        <button class="btn secondary" id="nav-forward">Forward</button>
-        <button class="btn secondary" id="theme-toggle">Light Mode</button>
+      <div class="nav-right">
+        <button class="nav-button ghost" id="nav-back">Back</button>
+        <button class="nav-button ghost" id="nav-forward">Forward</button>
+        <button class="nav-button ghost" id="theme-toggle">Light Mode</button>
       </div>
     </nav>
+
+    <!-- Secondary nav -->
+    <nav class="secondary-nav">
+      <div class="nav-group">
+        <button class="nav-button">Editors ▾</button>
+        <div class="nav-dropdown">
+          <a class="dropdown-item" href="#" onclick="assemble(); return false;">Assemble</a>
+          <a class="dropdown-item" href="#" onclick="loadMachineCode(); return false;">Load Machine Code</a>
+          <a class="dropdown-item" href="#" onclick="clearSource(); return false;">Clear Editors</a>
+          <a class="dropdown-item" href="#" onclick="document.getElementById('file-input').click(); return false;">Import .asm/.hex</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-button">Memory ▾</button>
+        <div class="nav-dropdown">
+          <a class="dropdown-item" href="#" onclick="setMemoryView('unified'); return false;">Unified View</a>
+          <a class="dropdown-item" href="#" onclick="setMemoryView('split'); return false;">Split View</a>
+          <a class="dropdown-item" href="#" onclick="restart(); return false;">Restart (PC=0)</a>
+          <a class="dropdown-item" href="#" onclick="reset(); return false;">Reset All</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-button">Run ▾</button>
+        <div class="nav-dropdown">
+          <a class="dropdown-item" href="#" onclick="step(); return false;">Step</a>
+          <a class="dropdown-item" href="#" onclick="run(); return false;">Run</a>
+          <a class="dropdown-item" href="#" onclick="animateExec(); return false;">Animate</a>
+          <a class="dropdown-item" href="#" onclick="stop(); return false;">Stop</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-button">Project ▾</button>
+        <div class="nav-dropdown">
+          <a class="dropdown-item" href="#" onclick="exportProject(); return false;">Export Project</a>
+          <a class="dropdown-item" href="#" onclick="document.getElementById('project-file-input').click(); return false;">Import Project</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-button">Samples ▾</button>
+        <div class="nav-dropdown">
+          <a class="dropdown-item" href="#" onclick="loadSampleTest('add_two','asm'); return false;">Add Two (ASM)</a>
+          <a class="dropdown-item" href="#" onclick="loadSampleTest('add_two','hex'); return false;">Add Two (HEX)</a>
+          <a class="dropdown-item" href="#" onclick="loadSampleTest('store_and_mix','asm'); return false;">Store & Mix (ASM)</a>
+          <a class="dropdown-item" href="#" onclick="loadSampleTest('store_and_mix','hex'); return false;">Store & Mix (HEX)</a>
+          <a class="dropdown-item" href="#" onclick="loadSampleTest('loop_sum','asm'); return false;">Loop Sum (ASM)</a>
+          <a class="dropdown-item" href="#" onclick="loadSampleTest('loop_sum','hex'); return false;">Loop Sum (HEX)</a>
+        </div>
+        </div>
+      </nav>
       
     <div class="header">
       <div class="brand">CP</div>
@@ -58,7 +89,7 @@
         <div class="top-controls card">
           <div class="panel-block">
             <div class="panel-block__header">
-              <div>
+          <div>
                 <strong>Machine Code (hex)</strong>
                 <div class="panel-block__sub">Paste bytes or load a demo, then push to program memory.</div>
               </div>
@@ -78,8 +109,8 @@
               <div>
                 <strong>Assembler (optional)</strong>
                 <div class="panel-block__sub">Write mnemonics; assemble to update program memory and hex view.</div>
-              </div>
             </div>
+          </div>
             <textarea id="assembler-in" class="input" rows="6" placeholder="LD [30], r0&#10;LD [31], r1&#10;ADD r3, r1, r0"></textarea>
             <div class="button-row">
               <button class="btn" onclick="assemble()">Assemble → Program Memory</button>
@@ -155,7 +186,7 @@
               <div class="memory-section">
                 <div class="memory-section__header">
                   <div>
-                    <strong>Program Memory</strong>
+            <strong>Program Memory</strong>
                     <div class="memory-section__sub">Instructions &amp; disassembly</div>
                   </div>
                   <span class="badge">256 bytes</span>
@@ -163,11 +194,11 @@
                 <div class="table-wrapper">
                   <table id="prog-mem-table" class="table"></table>
                 </div>
-              </div>
+          </div>
               <div class="memory-section">
                 <div class="memory-section__header">
                   <div>
-                    <strong>Data Memory</strong>
+            <strong>Data Memory</strong>
                     <div class="memory-section__sub">Live RAM contents</div>
                   </div>
                   <span class="badge">256 bytes</span>
@@ -226,7 +257,7 @@
 
         <div class="card trace-card">
           <div class="trace-header">
-            <strong>Execution Trace</strong>
+          <strong>Execution Trace</strong>
             <div class="mode-toggle">
               <button id="trace-mode-asm" class="active" onclick="setTraceMode('asm')">Assembly</button>
               <button id="trace-mode-hex" onclick="setTraceMode('hex')">Machine</button>

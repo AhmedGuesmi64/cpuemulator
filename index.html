@@ -5,75 +5,101 @@
   <title>CP Emulator — Main Menu</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
 </head>
 <body>
   <div class="app">
-    <nav class="topnav card">
-        <div class="topnav-left">
-          <div class="brand">CP</div>
-          <a href="index.html" class="topnav-link active">Home</a>
-          <div class="dropdown">
-            <button class="dropdown-toggle">Pages ▾</button>
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="emulator.html">Emulator</a>
-              <a class="dropdown-item" href="Editor.html">Editor</a>
-              <a class="dropdown-item" href="docs/README.html">Docs</a>
-              <a class="dropdown-item" href="docs/Status Ahmed 2025-10-29-1.pdf">Status PDF</a>
-            </div>
-          </div>
+    <!-- Primary nav -->
+    <nav class="primary-nav">
+      <div class="nav-left">
+        <div class="brand">CP</div>
+        <button class="nav-button" onclick="location.href='index.html'">Home</button>
+        <button class="nav-button" onclick="location.href='emulator.html'">Emulator</button>
+        <button class="nav-button" onclick="location.href='docs/README.html'">Docs</button>
+      </div>
+      <div class="nav-right">
+        <button class="nav-button ghost" id="nav-back">Back</button>
+        <button class="nav-button ghost" id="nav-forward">Forward</button>
+        <button class="nav-button ghost" id="theme-toggle">Light Mode</button>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-text">
+        <h1>Teach a Tiny CPU</h1>
+        <p>Write mnemonics, assemble to bytes, and watch the fetch–decode–execute cycle in real time.</p>
+        <div class="hero-actions">
+          <button class="btn" onclick="location.href='emulator.html'">Open Emulator</button>
         </div>
-        <div class="topnav-right">
-          <button class="btn secondary" id="nav-back">Back</button>
-          <button class="btn secondary" id="nav-forward">Forward</button>
-          <button class="btn secondary" id="theme-toggle">Light Mode</button>
+      </div>
+      <div class="hero-highlight">
+        <div class="hero-badge">256B</div>
+        <div class="hero-note">Shared memory · r0–r3 · LD/ST/ADD/JMP/HALT</div>
+      </div>
+    </section>
+
+    <!-- Feature strip -->
+    <section class="feature-strip">
+      <div class="feature-card">
+        <div class="feature-icon">⌨️</div>
+        <h3>Assemble & Run</h3>
+        <p>Paste ASM or HEX, assemble, and load with a click.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>Live State</h3>
+        <p>Unified memory view, PC/flags, registers, and operand highlights.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎞️</div>
+        <h3>Step / Animate</h3>
+        <p>Single-step, run, or animate with timestamped trace logs.</p>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="how">
+      <h2>How it works</h2>
+      <div class="how-steps">
+        <div class="step">
+          <div class="step-icon">1</div>
+          <div class="step-text">Write assembly or paste machine code.</div>
         </div>
-      </nav>
-      
-    <div class="header">
+        <div class="step">
+          <div class="step-icon">2</div>
+          <div class="step-text">Assemble/Load, pick Unified or Split memory view.</div>
+        </div>
+        <div class="step">
+          <div class="step-icon">3</div>
+          <div class="step-text">Step/Run/Animate and watch the trace + highlights.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Docs & resources -->
+    <section class="resources">
+      <h2>Docs & Resources</h2>
+      <div class="resource-cards">
+        <div class="card">
+          <h3>Documentation</h3>
+          <p class="note">Instruction set, UI overview, and usage guide.</p>
+          <button class="btn secondary" onclick="location.href='docs/README.html'">Open Docs</button>
+        </div>
+        <div class="card">
+          <h3>Status PDF</h3>
+          <p class="note">Latest project status and requirements.</p>
+          <button class="btn secondary" onclick="location.href='docs/Status Ahmed 2025-10-29-1.pdf'">View Status</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
       <div class="brand">CP</div>
-      <div>
-        <div class="title">CP Small Example Processor</div>
-        <div class="subtitle">Tiny 8-bit teaching CPU — Main Menu</div>
-      </div>
-    </div>
+      <div class="note">Small Example Processor emulator · ASM/HEX, unified memory, step/run/animate.</div>
+    </footer>
 
-    <div class="row">
-      <div class="card" style="flex:1;">
-        <h3>Get started</h3>
-        <p class="note">Open the editor to write assembly, or run the emulator directly.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-          <a href="emulator.html"><button class="btn">Open Emulator</button></a>
-          <a href="emulator.html#loadSample"><button class="btn secondary">Quick Demo</button></a>
-        </div>
-      </div>
-
-      <div class="card" style="flex:1;">
-        <h3>Resources</h3>
-        <p class="note">Documentation, lab exercises, and presentation for professors.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-          <a href="docs/README.html"><button class="btn secondary">Documentation</button></a>
-          <a href="docs/exercices.html"><button class="btn secondary">Exercises</button></a>
-        </div>
-      </div>
-    </div>
-
-    <div class="sep"></div>
-
-    <div class="row">
-      <div class="card" style="flex:1;">
-        <h4>About this project</h4>
-        <p class="note">This demo shows a minimal CPU with 1-byte instructions: LD, ST, ADD, JMP. Use the editor to create programs and the emulator to step/animate execution.</p>
-      </div>
-
-      <div class="card" style="width:300px;">
-        <h4>Quick links</h4>
-        <div class="kv"><strong>Memory:</strong><span class="note" style="margin-left:8px">256 bytes shared (Harvard-to-von Neumann ready)</span></div>
-        <div class="kv"><strong>Registers:</strong><span class="note" style="margin-left:8px">r0–r3 (8-bit)</span></div>
-        <div class="kv"><strong>Instruction set:</strong><span class="note" style="margin-left:8px">LD, ST, ADD, JMP/HALT</span></div>
-        <div class="kv"><strong>Sample tests:</strong><span class="note" style="margin-left:8px"><code>/tests</code> folder (hooked into Emulator UI)</span></div>
-        <div class="kv"><strong>Docs & status:</strong><span class="note" style="margin-left:8px"><a href="docs/Status%20Ahmed%202025-10-29-1.pdf">Latest status PDF</a></span></div>
-      </div>
-    </div>
     <script src="js/navigationMenuScript.js"></script>
     <script src="js/themeToggle.js"></script>
   </div>

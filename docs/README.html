@@ -1,71 +1,136 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <title>CP Emulator — README</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <link rel="stylesheet" href="../css/theme.css"/>
+  <meta charset="utf-8" />
+  <title>CP Emulator — Docs</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="../css/theme.css" />
 </head>
 <body>
   <div class="app">
-    <nav class="topnav card">
-        <div class="topnav-left">
-          <a href="../index.html" class="topnav-link">Home</a>
-          <a href="../emulator.html" class="topnav-link">Emulator</a>
-          <a href="README.html" class="topnav-link">Docs</a>
-        </div>
-        <div class="topnav-right">
-          <button class="btn secondary" id="nav-back">Back</button>
-          <button class="btn secondary" id="nav-forward">Forward</button>
-        </div>
-      </nav>
-      
-    <div class="header">
-      <div class="brand">CP</div>
-      <div>
-        <div class="title">CP Emulator — Documentation</div>
-        <div class="subtitle">Architecture, instruction set, usage</div>
+    <nav class="primary-nav">
+      <div class="nav-left">
+        <div class="brand">CP</div>
+        <button class="nav-button" onclick="location.href='../index.html'">Home</button>
+        <button class="nav-button" onclick="location.href='../emulator.html'">Emulator</button>
+        <button class="nav-button" onclick="location.href='README.html'">Docs</button>
       </div>
-    </div>
+      <div class="nav-right">
+        <button class="nav-button ghost" id="nav-back">Back</button>
+        <button class="nav-button ghost" id="nav-forward">Forward</button>
+        <button class="nav-button ghost" id="theme-toggle">Light Mode</button>
+      </div>
+    </nav>
 
-    <div class="card">
-      <h3>Overview</h3>
-      <p class="note">A tiny browser-based emulator illustrating fetch-decode-execute for a minimal 8-bit CPU.</p>
+    <section class="hero">
+      <div class="hero-text">
+        <h1>Documentation</h1>
+        <p>Architecture, usage, and reference for the CP Emulator.</p>
+        <div class="hero-actions">
+          <button class="btn" onclick="location.href='../emulator.html'">Open Emulator</button>
+          <button class="btn ghost" onclick="document.getElementById('docs-nav').scrollIntoView({behavior:'smooth'});">Browse Docs</button>
+        </div>
+      </div>
+      <div class="hero-highlight">
+        <div class="hero-badge">Docs</div>
+        <div class="hero-note">ASM/HEX · Memory · Execution · Projects</div>
+      </div>
+    </section>
 
-      <h4>Key components</h4>
-      <ul>
-        <li><strong>Program memory</strong>: 32 bytes (pmem)</li>
-        <li><strong>Data memory</strong>: 32 bytes (dmem)</li>
-        <li><strong>Registers</strong>: r0..r3 (8-bit)</li>
-        <li><strong>PC</strong>: program counter</li>
-        <li><strong>Flags</strong>: Zero (Z), Carry (C)</li>
-      </ul>
+    <section class="feature-strip" id="docs-nav">
+      <div class="feature-card" onclick="document.getElementById('overview').scrollIntoView({behavior:'smooth'});" style="cursor:pointer;">
+        <div class="feature-icon">📘</div>
+        <h3>Overview</h3>
+        <p>What’s inside and how the pieces fit.</p>
+      </div>
+      <div class="feature-card" onclick="document.getElementById('usage').scrollIntoView({behavior:'smooth'});" style="cursor:pointer;">
+        <div class="feature-icon">🛠️</div>
+        <h3>Usage</h3>
+        <p>Editors, memory views, and execution controls.</p>
+      </div>
+      <div class="feature-card" onclick="document.getElementById('reference').scrollIntoView({behavior:'smooth'});" style="cursor:pointer;">
+        <div class="feature-icon">📑</div>
+        <h3>Reference</h3>
+        <p>ISA, project I/O, and samples.</p>
+      </div>
+    </section>
 
-      <h4>Instruction encoding (1 byte each)</h4>
-      <ul>
-        <li><strong>LD [addr], rN</strong>: opcode bits 7..6 = 00, bit5=0, bits4..2 = addr (masked to 4 bits), bits1..0 = reg id</li>
-        <li><strong>ST rN, [addr]</strong>: opcode bits 7..6 = 00, bit5=1, operand/reg same layout as LD</li>
-        <li><strong>ADD rZ, rX, rY</strong>: opcode bits 7..6 = 10, bits5..4 = rZ, bits3..2 = rX, bits1..0 = rY</li>
-        <li><strong>JMP addr</strong>: opcode bits 7..6 = 11, bits5..0 = 6-bit address</li>
-      </ul>
+    <section class="resources" id="overview">
+      <h2>Overview</h2>
+      <div class="resource-cards">
+        <div class="card">
+          <h3>Architecture</h3>
+          <p class="note">Modular JS: state, assembler/disasm, execution, UI, editor, project bundle, theme, bindings.</p>
+        </div>
+        <div class="card">
+          <h3>UI Surface</h3>
+          <p class="note">Unified/split memory, ASM/HEX editors, samples, status/controls, trace, project I/O.</p>
+        </div>
+      </div>
+    </section>
 
-      <h4>How to use</h4>
-      <ol>
-        <li>Open <code>editor.html</code>.</li>
-        <li>Type assembly into the Assembly Source box or paste hex into Machine Code box.</li>
-        <li>Click Assemble or Load to populate Program Memory (preview shown on page).</li>
-        <li>Edit Data Memory cells, then Step / Run / Animate using the controls.</li>
-      </ol>
+    <section class="resources" id="usage">
+      <h2>Usage</h2>
+      <div class="resource-cards">
+        <div class="card">
+          <h3>Editors</h3>
+          <ul class="note">
+            <li>CodeMirror ASM + HEX with autocomplete (Ctrl/Cmd+Space).</li>
+            <li>Import .asm/.hex; load or assemble to program memory.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Memory Views</h3>
+          <ul class="note">
+            <li>Unified or split tables with highlights for PC/prev/next, operands, jump targets, LD/ST addresses.</li>
+            <li>Source/dest registers color-coded.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Execution</h3>
+          <ul class="note">
+            <li>Step, Run, Animate; Restart (PC=0); Reset All; Stop.</li>
+            <li>Trace with millisecond timestamps; toggle ASM/HEX view.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
 
-      <h4>Demo scenarios</h4>
-      <ul>
-        <li>Simple add and store: load two data values, ADD them into r2, ST r2 into a data cell.</li>
-        <li>Carry wrap demo: add 0xFF + 0x02 to show Carry flag and wrapping.</li>
-        <li>Self-modifying code: load machine hex, then edit pmem or re-load different hex to show changed behavior.</li>
-      </ul>
-    </div>
+    <section class="resources" id="reference">
+      <h2>Reference</h2>
+      <div class="resource-cards">
+        <div class="card">
+          <h3>ISA</h3>
+          <ul class="note">
+            <li>Ops: LD, ST, ADD, JMP/HALT.</li>
+            <li>Registers: r0–r3 (8-bit).</li>
+            <li>Memory: 256 bytes; operands 1 byte; JMP target 0x00–0x3F.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Projects</h3>
+          <ul class="note">
+            <li>Export `.cpuproj.json` (asm, hex, mem, regs, flags, PC).</li>
+            <li>Import restores state (halts any running animation).</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Samples</h3>
+          <ul class="note">
+            <li><code>add_two</code>: [0x20]+[0x21] → [0x22]</li>
+            <li><code>store_and_mix</code>: mirror [0x30] to 0x40; sum with [0x31]; store at 0x41</li>
+            <li><code>loop_sum</code>: accumulate [0x51] into [0x50]</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="brand">CP</div>
+      <div class="note">CP Emulator documentation · Unified/split memory, ASM/HEX, step/run/animate.</div>
+    </footer>
   </div>
-  <script src="js/navigationMenuScript.js"></script>
-  
+  <script src="../js/navigationMenuScript.js"></script>
+  <script src="../js/themeToggle.js"></script>
 </body>
 </html>

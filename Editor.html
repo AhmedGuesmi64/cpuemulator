@@ -8,27 +8,19 @@
 </head>
 <body>
   <div class="app">
-    <nav class="topnav card">
-      <div class="topnav-left">
+    <nav class="primary-nav">
+      <div class="nav-left">
         <div class="brand">CP</div>
-        <a href="index.html" class="topnav-link">Home</a>
-        <div class="dropdown">
-          <button class="dropdown-toggle">Pages ▾</button>
-          <div class="dropdown-menu">
-            <a class="dropdown-item" href="emulator.html">Emulator</a>
-            <a class="dropdown-item" href="Editor.html">Editor</a>
-            <a class="dropdown-item" href="docs/README.html">Docs</a>
-            <a class="dropdown-item" href="docs/Status Ahmed 2025-10-29-1.pdf">Status PDF</a>
-          </div>
-        </div>
+        <button class="nav-button" onclick="location.href='index.html'">Home</button>
+        <button class="nav-button" onclick="location.href='docs/README.html'">Docs</button>
       </div>
-      <div class="topnav-right">
-        <button class="btn secondary" id="nav-back">Back</button>
-        <button class="btn secondary" id="nav-forward">Forward</button>
-        <button class="btn secondary" id="theme-toggle">Light Mode</button>
+      <div class="nav-right">
+        <button class="nav-button ghost" id="nav-back">Back</button>
+        <button class="nav-button ghost" id="nav-forward">Forward</button>
+        <button class="nav-button ghost" id="theme-toggle">Light Mode</button>
       </div>
     </nav>
-    
+
     <div class="header">
       <div class="brand">CP</div>
       <div>
@@ -65,7 +57,7 @@
 
         <div class="sep"></div>
 
-        <div class="card notes-highlight" tabindex="0">
+        <div class="card">
           <strong>Notes / Editor</strong>
           <div class="code" contenteditable="true" id="notes">Use the assembly box to write code. Click "Assemble → Preview" to see program memory below. When ready click "Run in Emulator".</div>
         </div>
@@ -127,82 +119,51 @@ let halted = false;
 function toHex(x,pad=2){ return (x&0xFF).toString(16).toUpperCase().padStart(pad,'0'); }
 function logTrace(s){ const t=document.getElementById('trace'); const el=document.createElement('div'); el.textContent=s; t.prepend(el); while(t.children.length>200) t.removeChild(t.lastChild); }
 
-/* Disasm */
-function disasm(instr){
-  let b=instr, op=(b&0xC0)>>6;
-  if(op===0){ let isStore=(b&0x20)!==0; let operand=(b>>2)&0x0F; let r=b&0x03; return isStore?`ST r${r}, [${toHex(operand)}]`:`LD [${toHex(operand)}], r${r}`; }
-  if(op===2){ let z=(b>>4)&0x03, x=(b>>2)&0x03, y=b&0x03; return `ADD r${z}, r${x}, r${y}`; }
-  if(op===3) return `JMP ${toHex(b&0x3F)}`;
-  return 'UNK';
-}
-
-/* Assemble simple assembly to pmem (same parser used in emulator) */
+/* Simple assembler for preview */
 function assemble(){
-  const src = document.getElementById('assembler-in').value.trim().split(/\n/);
-  let out = [];
-  for(let line of src){
-    line = line.replace(/(;|#).*$/,'').trim();
+  const src = (document.getElementById('assembler-in').value||'').trim().split(/\n/);
+  let out=[];
+  for(const raw of src){
+    const line = raw.replace(/(;|#).*$/,'').trim();
     if(!line) continue;
     let m;
-    if(m=line.match(/^LD\s*\[\s*([^\]]+)\s*\],\s*r([0-3])$/i)){
-      let addr = parseInt(m[1],16); if(isNaN(addr)){ alert('Bad LD address: '+m[1]); return; }
-      addr &= 0x0F; let r = parseInt(m[2],10)&0x03;
-      out.push((0x00)|((addr&0x0F)<<2)|(r&0x03));
-    } else if(m=line.match(/^ST\s*r([0-3])\s*,\s*\[\s*([^\]]+)\s*\]$/i)){
-      let r = parseInt(m[1],10)&0x03; let addr = parseInt(m[2],16); if(isNaN(addr)){ alert('Bad ST address: '+m[2]); return; }
-      addr &= 0x0F; out.push((0x00)|0x20|((addr&0x0F)<<2)|(r&0x03));
-    } else if(m=line.match(/^ADD\s*r([0-3])\s*,\s*r([0-3])\s*,\s*r([0-3])$/i)){
-      let z=parseInt(m[1],10)&0x03, x=parseInt(m[2],10)&0x03, y=parseInt(m[3],10)&0x03;
-      out.push(0x80|((z&0x03)<<4)|((x&0x03)<<2)|(y&0x03));
-    } else if(m=line.match(/^JMP\s*([0-9A-Fa-f]+)$/i)){
-      let addr=parseInt(m[1],16); if(isNaN(addr)){ alert('Bad JMP address: '+m[1]); return; }
-      addr &= 0x3F; out.push(0xC0|addr);
-    } else { alert('Cannot parse: ' + line); return; }
-  }
-  pmem.fill(0); out.forEach((v,i)=>pmem[i]=v);
-  pc = 0; halted = false;
-  // keep dmem unchanged for preview unless you want to reset
-  updateAll();
-}
-
-/* Load machine hex into pmem from machine-in textarea */
-function loadMachineCode(){
-  let txt = document.getElementById('machine-in').value.trim();
-  if(!txt) return;
-  let parts = txt.split(/[\s,]+/).filter(x=>x);
-  if(parts.some(x=>!/^[0-9A-Fa-f]{1,2}$/.test(x))){ alert('Enter hex bytes like: 00 01 A1'); return; }
-  pmem.fill(0); parts.map(x=>parseInt(x,16)&0xFF).forEach((v,i)=>pmem[i]=v);
-  pc = 0; halted = false; updateAll();
-}
-
-/* File import: accept hex or assembly text */
-function handleFile(ev){
-  const f = ev.target.files[0]; if(!f) return;
-  const r = new FileReader();
-  r.onload = (e) => {
-    const txt = e.target.result.replace(/\r/g,'').trim();
-    if(/^[0-9A-Fa-f\s,]+$/.test(txt)) {
-      document.getElementById('machine-in').value = txt;
-      loadMachineCode();
+    if(m = line.match(/^LD\s*\[\s*([^\]]+)\s*\],\s*r([0-3])$/i)){
+      let addr=parseInt(m[1],16); let r=parseInt(m[2],10);
+      out.push(0x01, addr & 0xFF, r & 0x03);
+    } else if(m = line.match(/^ST\s*r([0-3])\s*,\s*\[\s*([^\]]+)\s*\]$/i)){
+      let r=parseInt(m[1],10); let addr=parseInt(m[2],16);
+      out.push(0x02, addr & 0xFF, r & 0x03);
+    } else if(m = line.match(/^ADD\s*r([0-3])\s*,\s*r([0-3])\s*,\s*r([0-3])$/i)){
+      let z=parseInt(m[1],10), x=parseInt(m[2],10), y=parseInt(m[3],10);
+      out.push(0x03, z & 0x03, x & 0x03, y & 0x03);
+    } else if(m = line.match(/^JMP\s*([0-9A-Fa-f]+)$/i)){
+      let addr=parseInt(m[1],16);
+      out.push(0x04, addr & 0xFF);
+    } else if(/^HALT$/i.test(line)){
+      out.push(0xFF);
     } else {
-      document.getElementById('assembler-in').value = txt;
-      assemble();
+      alert('Cannot parse: ' + line); return;
     }
-  };
-  r.readAsText(f);
+  }
+  pmem.fill(0);
+  out.forEach((v,i)=>{ if(i<PMEM_SIZE) pmem[i]=v; });
+  pc=0; halted=false;
+  updateAll();
+  logTrace(`Assembled ${out.length} bytes`);
 }
 
-/* Save pmem as .hex */
-function saveProgram(){
-  // if pmem all 0, still save zeros
-  let hex = Array.from(pmem).map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
-  const blob = new Blob([hex], {type:'text/plain'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'program.hex';
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+function loadMachineCode(){
+  const txt = (document.getElementById('machine-in').value||'').trim();
+  if(!txt) return;
+  const parts = txt.split(/[\s,]+/).filter(Boolean);
+  if(parts.some(x=>!/^[0-9A-Fa-f]{1,2}$/.test(x))){ alert('Invalid hex'); return; }
+  pmem.fill(0);
+  parts.map(x=>parseInt(x,16)&0xFF).forEach((v,i)=>{ if(i<PMEM_SIZE) pmem[i]=v; });
+  pc=0; halted=false;
+  updateAll();
+  logTrace(`Loaded ${Math.min(parts.length,PMEM_SIZE)} bytes`);
 }
 
-/* Clear source */
 function clearSource(){
   document.getElementById('assembler-in').value='';
   document.getElementById('machine-in').value='';
@@ -229,6 +190,16 @@ function updateAll(){
   document.getElementById('flags').innerText = 'Z:'+(flags.Z?1:0)+' C:'+(flags.C?1:0);
 }
 
+/* Disasm for preview */
+function disasm(op){
+  if(op === 0x01) return 'LD [??], r?';
+  if(op === 0x02) return 'ST r?, [??]';
+  if(op === 0x03) return 'ADD r?, r?, r?';
+  if(op === 0x04) return 'JMP ??';
+  if(op === 0xFF) return 'HALT';
+  return 'DB ' + toHex(op);
+}
+
 /* Editing data memory in preview */
 function editDmem(i, v){
   let s = v.trim();
@@ -238,12 +209,9 @@ function editDmem(i, v){
   dmem[i] = x & 0xFF; updateAll();
 }
 
-/* Default instruction: LD [00], r0 => 0x00 */
-function defaultInstr(){ return 0x00; }
-
 /* Reset preview: default pmem filled with LD [00], r0; dmem cleared */
 function reset(){
-  pmem.fill(defaultInstr());
+  pmem.fill(0);
   dmem.fill(0);
   regs = [0,0,0,0];
   flags = {Z:false,C:false};
@@ -251,41 +219,42 @@ function reset(){
   document.getElementById('trace').innerHTML = '';
   updateAll();
 }
-
-/* Small sample program (for loadSample button) */
-const SAMPLE = [
-  0x00, // LD [00], r0
-  (0x00)|((0x01&0x0F)<<2)|1, // LD [01], r1
-  0x80|((2&0x03)<<4)|((0&0x03)<<2)|1, // ADD r2,r0,r1
-  (0x00)|0x20|((0x02&0x0F)<<2)|2, // ST r2,[02]
-  0xC0|0x06 // JMP 06
-];
-function loadSample(){ pmem.fill(0); SAMPLE.forEach((v,i)=>pmem[i]=v); dmem.fill(0); dmem[0]=0x05; dmem[1]=0x07; pc=0; halted=false; document.getElementById('trace').innerHTML=''; updateAll(); }
-
-/* Open emulator with pmem encoded in fragment: #hex=XX+YY+... (space replaced with +) */
-/* If useUrlLoadReplace=true, the emulator will replace its PMEM with provided hex upon load */
-function openInEmulator(useUrlLoadReplace = false){
-  // ensure pmem current (assemble if assembly textarea non-empty and pmem is default)
-  // if assembly textbox contains content, assemble it to pmem
-  const asmBox = document.getElementById('assembler-in').value.trim();
-  if(asmBox) assemble();
-  // build hex string (space separated)
-  const hex = Array.from(pmem).map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
-  const encoded = encodeURIComponent(hex);
-  const url = `emulator.html#hex=${encoded}${useUrlLoadReplace? '&replace=1':''}`;
-  window.open(url, '_blank');
-}
-
-/* Initialize preview on load */
 reset();
 
-/* Expose useful functions for debugging */
-window.assemble = assemble;
-window.loadMachineCode = loadMachineCode;
-window.loadSample = loadSample;
-window.saveProgram = saveProgram;
-window.reset = reset;
-window.openInEmulator = openInEmulator;
+/* Drag/drop + file import */
+function handleFile(ev){
+  const f = ev.target.files && ev.target.files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = (e)=>{
+    const txt = e.target.result || '';
+    if(/^[0-9A-Fa-f\s,]+$/.test(txt.trim())){ document.getElementById('machine-in').value = txt; loadMachineCode(); }
+    else { document.getElementById('assembler-in').value = txt; assemble(); }
+  };
+  r.readAsText(f);
+}
+
+function loadSample(){
+  const SAMPLE = [0x00,0x01,0x80,0x12,0x02,0xC0];
+  pmem.fill(0); SAMPLE.forEach((v,i)=> pmem[i]=v);
+  dmem.fill(0); dmem[0]=0x05; dmem[1]=0x07; pc=0; halted=false; document.getElementById('trace').innerHTML=''; updateAll();
+}
+
+/* Open emulator with pmem encoded in fragment: #hex=XX+YY+... */
+function openInEmulator(useUrlLoadReplace = false){
+  // ensure pmem current (assemble if assembly textarea non-empty and pmem is default)
+  const asmVal = document.getElementById('assembler-in').value.trim();
+  if(asmVal){
+    assemble();
+  }
+  const hex = Array.from(pmem).map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join('+');
+  let url = 'emulator.html#hex=' + encodeURIComponent(hex);
+  if(useUrlLoadReplace) url += '+loadSample';
+  window.location.href = url;
+}
+
+updateAll();
 </script>
 </body>
 </html>
+
