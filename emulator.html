@@ -17,6 +17,7 @@
       <div class="nav-left">
         <div class="brand">CP</div>
         <button class="nav-button" onclick="location.href='index.html'">Home</button>
+        <button class="nav-button" onclick="location.href='emulator.html'">Emulator</button>
         <button class="nav-button" onclick="location.href='docs/README.html'">Docs</button>
       </div>
       <div class="nav-right">
@@ -40,8 +41,8 @@
       <div class="nav-group">
         <button class="nav-button">Memory ▾</button>
         <div class="nav-dropdown">
-          <a class="dropdown-item" href="#" onclick="setMemoryView('unified'); return false;">Unified View</a>
-          <a class="dropdown-item" href="#" onclick="setMemoryView('split'); return false;">Split View</a>
+          <a class="dropdown-item" id="nav-mem-unified" href="#" onclick="setMemoryView('unified'); return false;">Unified View</a>
+          <a class="dropdown-item" id="nav-mem-split" href="#" onclick="setMemoryView('split'); return false;">Split View</a>
           <a class="dropdown-item" href="#" onclick="restart(); return false;">Restart (PC=0)</a>
           <a class="dropdown-item" href="#" onclick="reset(); return false;">Reset All</a>
         </div>
@@ -71,6 +72,9 @@
           <a class="dropdown-item" href="#" onclick="loadSampleTest('store_and_mix','hex'); return false;">Store & Mix (HEX)</a>
           <a class="dropdown-item" href="#" onclick="loadSampleTest('loop_sum','asm'); return false;">Loop Sum (ASM)</a>
           <a class="dropdown-item" href="#" onclick="loadSampleTest('loop_sum','hex'); return false;">Loop Sum (HEX)</a>
+          <div class="dropdown-separator"></div>
+          <a class="dropdown-item" href="#" onclick="loadExercise22(); return false;">Exercise 22</a>
+          <a class="dropdown-item" href="#" onclick="loadExercise23(); return false;">Exercise 23</a>
         </div>
         </div>
       </nav>
@@ -97,8 +101,7 @@
             <textarea id="machine-in" class="input" rows="6" placeholder="00 00 01 31 B4 02 32 BB 43 33 C0"></textarea>
             <div class="button-row">
               <button class="btn secondary" onclick="loadMachineCode()">Load → Program Memory</button>
-              <button class="btn ghost" onclick="loadExercise22()">Demo: Exercise 22</button>
-              <button class="btn ghost" onclick="loadExercise23()">Demo: Exercise 23</button>
+          <button class="btn secondary" onclick="clearHex()">Clear HEX</button>
             </div>
             <input id="file-input" type="file" accept=".asm,.s,.txt,.hex" style="display:none" />
             <button class="btn secondary" style="margin-top:8px" onclick="document.getElementById('file-input').click()">Import .asm / .hex</button>
@@ -115,53 +118,14 @@
             <div class="button-row">
               <button class="btn" onclick="assemble()">Assemble → Program Memory</button>
               <button class="btn secondary" onclick="clearSource()">Clear</button>
-              <button class="btn ghost" onclick="loadExercise22()">Demo: Exercise 22</button>
-              <button class="btn ghost" onclick="loadExercise23()">Demo: Exercise 23</button>
+          <button class="btn secondary" onclick="clearAsm()">Clear ASM</button>
             </div>
-            <div id="drop-target" class="card drop-card">
-              Drag any .asm / .hex file here to load it instantly
-            </div>
+            <!-- Drop is now wired directly onto editors -->
           </div>
         </div>
 
         <div class="sep"></div>
 
-        <div class="card sample-card">
-          <div class="card-heading">
-            <strong>Sample Programs</strong>
-            <span class="note">Pulled from <code>/tests</code> so you can demo quickly.</span>
-          </div>
-          <div class="sample-row">
-            <div>
-              <div class="sample-name">Add Two Bytes</div>
-              <div class="sample-desc">Adds [0x20] + [0x21] and writes the sum to 0x22.</div>
-            </div>
-            <div class="sample-actions">
-              <button class="btn ghost" onclick="loadSampleTest('add_two','asm')">ASM</button>
-              <button class="btn ghost" onclick="loadSampleTest('add_two','hex')">HEX</button>
-            </div>
-          </div>
-          <div class="sample-row">
-            <div>
-              <div class="sample-name">Store & Mix</div>
-              <div class="sample-desc">Copies input to 0x40, sums two bytes, stores at 0x41.</div>
-            </div>
-            <div class="sample-actions">
-              <button class="btn ghost" onclick="loadSampleTest('store_and_mix','asm')">ASM</button>
-              <button class="btn ghost" onclick="loadSampleTest('store_and_mix','hex')">HEX</button>
-            </div>
-          </div>
-          <div class="sample-row">
-            <div>
-              <div class="sample-name">Looping Accumulator</div>
-              <div class="sample-desc">Keeps adding [0x51] into [0x50] forever (great for tracing).</div>
-            </div>
-            <div class="sample-actions">
-              <button class="btn ghost" onclick="loadSampleTest('loop_sum','asm')">ASM</button>
-              <button class="btn ghost" onclick="loadSampleTest('loop_sum','hex')">HEX</button>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- MIDDLE: Unified Memory -->
@@ -261,6 +225,7 @@
             <div class="mode-toggle">
               <button id="trace-mode-asm" class="active" onclick="setTraceMode('asm')">Assembly</button>
               <button id="trace-mode-hex" onclick="setTraceMode('hex')">Machine</button>
+              <button id="trace-export-btn" class="btn secondary" style="margin-left:8px" onclick="exportTrace()">Export Trace</button>
             </div>
           </div>
           <div id="trace" class="trace-body"></div>
@@ -279,8 +244,11 @@
         </div>
 
         <div class="card legend-card">
-          <strong>Legend</strong>
-          <div class="legend-list">
+          <div class="card-heading">
+            <strong>Legend</strong>
+            <button class="btn secondary" id="legend-toggle-btn" onclick="toggleLegend()">Show Legend</button>
+          </div>
+          <div class="legend-list collapsed" id="legend-list">
             <span style="background:rgba(0,0,255,0.22);padding:2px 6px;">Current (Blue)</span> – instruction being executed<br>
             <span style="background:rgba(255,0,0,0.18);padding:2px 6px;">Previous (Red)</span> – instruction just executed<br>
             <span style="background:rgba(0,255,0,0.18);padding:2px 6px;">Next (Green)</span> – instruction that will execute next<br>
@@ -306,10 +274,6 @@
   <script src="js/uiModule.js"></script>
   <script src="js/editorEnhance.js"></script>
   <script src="js/projectBundle.js"></script>
-  <script src="js/coreState.js"></script>
-  <script src="js/assemblerModule.js"></script>
-  <script src="js/executionModule.js"></script>
-  <script src="js/uiModule.js"></script>
   <script src="js/appBindings.js"></script>
 </body>
 </html>

@@ -41,6 +41,8 @@
     onStateRendered: ()=>{},
     onHighlightChange: ()=>{},
     onTraceModeChange: ()=>{},
+    showToast: ()=>{},
+    onFlagsChange: ()=>{},
   };
 
   // --- helpers ---
@@ -186,7 +188,7 @@
 
   // --- highlight switch because apparently color helps me think call that 'tism moment ---
   const highlight = {
-    enabled: true,
+    enabled: false,
     toggle(){
       this.enabled = !this.enabled;
       hooks.onHighlightChange(this.enabled);

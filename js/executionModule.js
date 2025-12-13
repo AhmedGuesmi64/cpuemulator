@@ -6,6 +6,32 @@
 
   const { state, utils, config, trace, hooks } = CPU;
 
+  function reportFlags(reason, flagsBefore, flagsAfter){
+    if(flagsBefore.Z === flagsAfter.Z && flagsBefore.C === flagsAfter.C) return;
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        sessionId:'debug-session',
+        runId:'flags-debug',
+        hypothesisId:'F1',
+        location:'executionModule.js:reportFlags',
+        message:'flags changed',
+        data:{reason, before:flagsBefore, after:flagsAfter, pc:state.pc, opcode:state.mem[state.pc]},
+        timestamp:Date.now()
+      })
+    }).catch(()=>{});
+    // #endregion
+    hooks.onFlagsChange?.(flagsAfter);
+  }
+
+  function setFlags(z, c, reason){
+    const before = { Z: state.flags.Z, C: state.flags.C };
+    state.flags.Z = !!z;
+    state.flags.C = !!c;
+    reportFlags(reason, before, { Z: state.flags.Z, C: state.flags.C });
+  }
+
   function advance(count){
     state.pc = utils.wrapAddr(state.pc + count);
     utils.refreshNextPc();
@@ -27,8 +53,7 @@
       case config.ISA_TYPE.LOAD: {
         const addr = state.mem[utils.wrapAddr(state.pc + 1)];
         state.regs[op0] = state.mem[addr] ?? 0;
-        state.flags.Z = state.regs[op0] === 0;
-        state.flags.C = false;
+        setFlags(state.regs[op0] === 0, false, 'LD');
         hooks.flashDataCell(addr, 'read');
         hooks.flashRegister(op0);
         trace.log({ asm:`LD [${utils.toHex(addr)}] → ${utils.regName(op0)} = ${utils.toHex(state.regs[op0])}`, bytes:[opcode, addr] });
@@ -48,8 +73,7 @@
       case config.ISA_TYPE.ADD: {
         const sum = state.regs[op1] + state.regs[op0];
         state.regs[op2] = sum & 0xFF;
-        state.flags.C = sum > 0xFF;
-        state.flags.Z = state.regs[op2] === 0;
+        setFlags(state.regs[op2] === 0, sum > 0xFF, 'ADD');
         hooks.flashRegister(op2);
         trace.log({ asm:`ADD ${utils.regName(op2)} = ${utils.regName(op1)} + ${utils.regName(op0)} → ${utils.toHex(state.regs[op2])}`, bytes:[opcode] });
         advance(1);
@@ -72,6 +96,7 @@
       default: {
         trace.log({ asm:`UNK ${utils.toHex(opcode)} — halting`, bytes:[opcode] });
         state.halted = true;
+        hooks.onFlagsChange?.(state.flags);
         utils.refreshNextPc();
         break;
       }
@@ -115,7 +140,24 @@
       execInstr();
       steps++;
     }
-    if(steps >= MAX) trace.log('Run bailed: step limit hit (again)');
+    if(steps >= MAX){
+      trace.log('Run bailed: step limit hit (again)');
+      hooks.showToast?.('Step limit reached — halting run', 'info');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          sessionId:'debug-session',
+          runId:'step-limit',
+          hypothesisId:'H1',
+          location:'executionModule.js:run',
+          message:'step limit hit',
+          data:{steps, max:MAX},
+          timestamp:Date.now()
+        })
+      }).catch(()=>{});
+      // #endregion
+    }
     CPU.ui?.updateAll?.();
     state.running = false;
   }

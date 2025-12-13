@@ -5,6 +5,14 @@
   <title>CP Emulator — Docs</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="../css/theme.css" />
+  <script>
+    (function(){
+      try{
+        const theme = localStorage.getItem('cpuemulator_theme') || 'dark';
+        if(theme === 'light') document.documentElement.classList.add('theme-light');
+      }catch(_){}
+    })();
+  </script>
 </head>
 <body>
   <div class="app">
@@ -14,14 +22,14 @@
         <button class="nav-button" onclick="location.href='../index.html'">Home</button>
         <button class="nav-button" onclick="location.href='../emulator.html'">Emulator</button>
         <button class="nav-button" onclick="location.href='README.html'">Docs</button>
-      </div>
+        </div>
       <div class="nav-right">
         <button class="nav-button ghost" id="nav-back">Back</button>
         <button class="nav-button ghost" id="nav-forward">Forward</button>
         <button class="nav-button ghost" id="theme-toggle">Light Mode</button>
-      </div>
-    </nav>
-
+        </div>
+      </nav>
+      
     <section class="hero">
       <div class="hero-text">
         <h1>Documentation</h1>
@@ -34,13 +42,13 @@
       <div class="hero-highlight">
         <div class="hero-badge">Docs</div>
         <div class="hero-note">ASM/HEX · Memory · Execution · Projects</div>
-      </div>
+    </div>
     </section>
 
     <section class="feature-strip" id="docs-nav">
       <div class="feature-card" onclick="document.getElementById('overview').scrollIntoView({behavior:'smooth'});" style="cursor:pointer;">
         <div class="feature-icon">📘</div>
-        <h3>Overview</h3>
+      <h3>Overview</h3>
         <p>What’s inside and how the pieces fit.</p>
       </div>
       <div class="feature-card" onclick="document.getElementById('usage').scrollIntoView({behavior:'smooth'});" style="cursor:pointer;">
@@ -91,7 +99,7 @@
           <ul class="note">
             <li>Step, Run, Animate; Restart (PC=0); Reset All; Stop.</li>
             <li>Trace with millisecond timestamps; toggle ASM/HEX view.</li>
-          </ul>
+      </ul>
         </div>
       </div>
     </section>
@@ -120,9 +128,9 @@
             <li><code>add_two</code>: [0x20]+[0x21] → [0x22]</li>
             <li><code>store_and_mix</code>: mirror [0x30] to 0x40; sum with [0x31]; store at 0x41</li>
             <li><code>loop_sum</code>: accumulate [0x51] into [0x50]</li>
-          </ul>
-        </div>
-      </div>
+      </ul>
+    </div>
+  </div>
     </section>
 
     <footer class="footer">

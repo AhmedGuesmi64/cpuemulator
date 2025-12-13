@@ -2,9 +2,22 @@
 // Tiny theme switcher (dark/light) stored in localStorage
 (function(){
   const STORAGE_KEY = 'cpuemulator_theme';
-  const body = document.body;
+
+  // apply immediately to avoid flicker
+  (function applyEarly(){
+    try{
+      const theme = localStorage.getItem(STORAGE_KEY) || 'dark';
+      const body = document.body;
+      if(theme === 'light'){
+        body.classList.add('theme-light');
+      } else {
+        body.classList.remove('theme-light');
+      }
+    }catch(_){}
+  })();
 
   function applyTheme(theme){
+    const body = document.body;
     if(theme === 'light'){
       body.classList.add('theme-light');
     } else {
@@ -18,12 +31,16 @@
   }
 
   function loadTheme(){
-    return localStorage.getItem(STORAGE_KEY) || 'dark';
+    try{
+      return localStorage.getItem(STORAGE_KEY) || 'dark';
+    }catch(_){
+      return 'dark';
+    }
   }
 
   function toggleTheme(){
     const next = loadTheme() === 'light' ? 'dark' : 'light';
-    localStorage.setItem(STORAGE_KEY, next);
+    try{ localStorage.setItem(STORAGE_KEY, next); }catch(_){}
     applyTheme(next);
   }
 

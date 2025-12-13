@@ -52,6 +52,23 @@
     if(CPU.editor){
       if(typeof asm === 'string') CPU.editor.setAsmText(asm);
       if(typeof hex === 'string') CPU.editor.setHexText(hex);
+      CPU.editor.scrollEditorsToTop?.();
+      if(asm && !hex) CPU.editor.scrollEditorIntoView?.('asm');
+      else if(hex && !asm) CPU.editor.scrollEditorIntoView?.('hex');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          sessionId:'debug-session',
+          runId:'import-display',
+          hypothesisId:'H3',
+          location:'projectBundle.js:importProjectFromText',
+          message:'project import set editors + scrolled',
+          data:{asmLen:(asm||'').length, hexLen:(hex||'').length, focus: asm && !hex ? 'asm' : hex && !asm ? 'hex' : 'both'},
+          timestamp:Date.now()
+        })
+      }).catch(()=>{});
+      // #endregion
     }
     CPU.utils.refreshNextPc();
     CPU.ui?.updateAll?.();
@@ -61,7 +78,21 @@
   function importProjectFromFile(file){
     if(!file) return;
     file.text().then(importProjectFromText).catch(err=>{
-      alert('Failed to import project: ' + (err && err.message ? err.message : err));
+      CPU.hooks?.showToast?.('Failed to import project: ' + (err && err.message ? err.message : err), 'error');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          sessionId:'debug-session',
+          runId:'toast-debug',
+          hypothesisId:'T4',
+          location:'projectBundle.js:importProjectFromFile',
+          message:'project import error toast',
+          data:{name:file && file.name},
+          timestamp:Date.now()
+        })
+      }).catch(()=>{});
+      // #endregion
     });
   }
 

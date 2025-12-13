@@ -117,12 +117,73 @@
     }
   }
 
+  function scrollEditorsToTop(){
+    if(asmEditor){
+      asmEditor.scrollTo(null, 0);
+      asmEditor.setCursor(0,0);
+    } else {
+      const el = document.getElementById('assembler-in');
+      if(el) el.scrollTop = 0;
+    }
+    if(hexEditor){
+      hexEditor.scrollTo(null, 0);
+      hexEditor.setCursor(0,0);
+    } else {
+      const el = document.getElementById('machine-in');
+      if(el) el.scrollTop = 0;
+    }
+  }
+
+  function scrollEditorIntoView(which){
+    const useEditor = which === 'asm' ? asmEditor : hexEditor;
+    const fallbackId = which === 'asm' ? 'assembler-in' : 'machine-in';
+    const el = useEditor?.getWrapperElement ? useEditor.getWrapperElement() : document.getElementById(fallbackId);
+    const target = el || document.body;
+    const rect = target.getBoundingClientRect();
+    const targetY = window.scrollY + rect.top - 120; // offset to clear sticky nav + breathing room
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        sessionId:'debug-session',
+        runId:'import-display',
+        hypothesisId:'H4',
+        location:'editorEnhance.js:scrollEditorIntoView',
+        message:'scroll to editor',
+        data:{which, target: useEditor ? 'codemirror' : 'textarea', rectTop: rect.top},
+        timestamp:Date.now()
+      })
+    }).catch(()=>{});
+    // #endregion
+    window.scrollTo({ top: targetY, behavior:'smooth' });
+  }
+
+  function attachDropToEditors(onDrop){
+    const wire = (el, which)=>{
+      if(!el) return;
+      el.addEventListener('dragover', (e)=>{ e.preventDefault(); el.classList.add('drop-highlight'); });
+      el.addEventListener('dragleave', ()=> el.classList.remove('drop-highlight'));
+      el.addEventListener('drop', (e)=>{
+        e.preventDefault();
+        el.classList.remove('drop-highlight');
+        onDrop(e, which);
+      });
+    };
+    wire(asmEditor?.getWrapperElement?.(), 'asm');
+    wire(hexEditor?.getWrapperElement?.(), 'hex');
+    wire(document.getElementById('assembler-in'), 'asm');
+    wire(document.getElementById('machine-in'), 'hex');
+  }
+
   CPU.editor = {
     init: initEditors,
     getAsmText,
     getHexText,
     setAsmText,
-    setHexText
+    setHexText,
+    scrollEditorsToTop,
+    scrollEditorIntoView,
+    attachDropToEditors
   };
 })(window);
 

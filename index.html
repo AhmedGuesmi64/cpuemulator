@@ -5,6 +5,14 @@
   <title>CP Emulator — Main Menu</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="css/theme.css">
+  <script>
+    (function(){
+      try{
+        const theme = localStorage.getItem('cpuemulator_theme') || 'dark';
+        if(theme === 'light') document.documentElement.classList.add('theme-light');
+      }catch(_){}
+    })();
+  </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
 </head>
 <body>
@@ -85,11 +93,6 @@
           <h3>Documentation</h3>
           <p class="note">Instruction set, UI overview, and usage guide.</p>
           <button class="btn secondary" onclick="location.href='docs/README.html'">Open Docs</button>
-        </div>
-        <div class="card">
-          <h3>Status PDF</h3>
-          <p class="note">Latest project status and requirements.</p>
-          <button class="btn secondary" onclick="location.href='docs/Status Ahmed 2025-10-29-1.pdf'">View Status</button>
         </div>
       </div>
     </section>

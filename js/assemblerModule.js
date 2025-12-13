@@ -4,7 +4,7 @@
   const CPU = coreTarget.CPU;
   if(!CPU) throw new Error('CPU core vanished before assembler could even complain.');
 
-  const { state, utils, config, samples } = CPU;
+  const { state, utils, config, samples, hooks } = CPU;
 
   /**
    * Light-weight disassembler for the tiny ISA.
@@ -90,7 +90,21 @@
 
         throw new Error('no idea what that line was supposed to be');
       }catch(err){
-        alert(`Assemble fail: ${err.message || err} (line: "${line}")`);
+        hooks.showToast?.(`Assemble fail: ${err.message || err} (line: "${line}")`, 'error');
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            sessionId:'debug-session',
+            runId:'toast-debug',
+            hypothesisId:'T2',
+            location:'assemblerModule.js:assemble',
+            message:'assemble error toast',
+            data:{line},
+            timestamp:Date.now()
+          })
+        }).catch(()=>{});
+        // #endregion
         return;
       }
     }
@@ -133,7 +147,21 @@
       CPU.ui?.updateAll?.();
       CPU.trace.log({ asm:`Loaded machine code (${Math.min(parts.length,config.MEM_SIZE)} bytes)`, hex: hexString });
     }catch(err){
-      alert('Failed to load hex: ' + (err && err.message ? err.message : err));
+      hooks.showToast?.('Failed to load hex: ' + (err && err.message ? err.message : err), 'error');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          sessionId:'debug-session',
+          runId:'toast-debug',
+          hypothesisId:'T3',
+          location:'assemblerModule.js:loadMachineCodeFromString',
+          message:'load hex error toast',
+          data:{len: (txt||'').length},
+          timestamp:Date.now()
+        })
+      }).catch(()=>{});
+      // #endregion
     }
   }
 
