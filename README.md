@@ -1,19 +1,6 @@
 # Small Lecture Processor Emulator
 
-Browser-based toolchain for a tiny teaching CPU. It pairs a compact assembler with a live emulator so students can write mnemonics, assemble to machine code, and watch the fetch–decode–execute cycle with animated highlights.
-
-## Architecture
-
-- **coreState.js** — shared config/state (memory, registers, flags, PC), helpers, trace mode/timestamps, highlight state, sample programs.
-- **assemblerModule.js** — assemble/disassemble, load hex, load samples, and apply programs to memory.
-- **executionModule.js** — exec/step/run/animate/restart/reset; updates flags and trace.
-- **uiModule.js** — renders unified/split memory tables, highlights operands/jumps/source/dest regs, handles flashes, file inputs, and view toggles.
-- **editorEnhance.js** — CodeMirror setup for ASM/HEX with hints and theme.
-- **projectBundle.js** — export/import project JSON (asm, hex, mem, regs, flags, PC).
-- **appBindings.js** — wires everything to the window for button handlers.
-- **themeToggle.js** — light/dark theme with persistence.
-- **emulator.html** — main UI (top/secondary nav, editors, sample loader, memory view, status/controls, trace, project I/O).
-- **index.html** — landing page with hero CTA, features, how-it-works, and docs links.
+Browser-based toolchain that mirrors Prof. Widmann’s “Small Example Processor” from. It pairs a compact assembler with a live emulator so students can write mnemonics, assemble to machine code, and watch the fetch–decode–execute cycle with animated highlights.
 
 ## Features
 
