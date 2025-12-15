@@ -2,26 +2,16 @@
 // Runs instructions, manages run/step/animate, and logs whatever happens.
 (function(coreTarget){
   const CPU = coreTarget.CPU;
-  if(!CPU) throw new Error('CPU core missing, nothing to execute, story of my life.');
-
+  if(!CPU) throw new Error('CPU core missing, nothing to execute.');
+  //who needs objects when you can just have modules with state and functions ammirite ?
   const { state, utils, config, trace, hooks } = CPU;
-
+  //#region Execution Functions
+  /**
+   * Compares flags before and after an operation and reports changes.
+   */
+  //not touching that reason flag cause I don't want to break anything
   function reportFlags(reason, flagsBefore, flagsAfter){
     if(flagsBefore.Z === flagsAfter.Z && flagsBefore.C === flagsAfter.C) return;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        sessionId:'debug-session',
-        runId:'flags-debug',
-        hypothesisId:'F1',
-        location:'executionModule.js:reportFlags',
-        message:'flags changed',
-        data:{reason, before:flagsBefore, after:flagsAfter, pc:state.pc, opcode:state.mem[state.pc]},
-        timestamp:Date.now()
-      })
-    }).catch(()=>{});
-    // #endregion
     hooks.onFlagsChange?.(flagsAfter);
   }
 
@@ -29,14 +19,15 @@
     const before = { Z: state.flags.Z, C: state.flags.C };
     state.flags.Z = !!z;
     state.flags.C = !!c;
-    reportFlags(reason, before, { Z: state.flags.Z, C: state.flags.C });
+    reportFlags( reason, before, { Z: state.flags.Z, C: state.flags.C });
   }
 
   function advance(count){
     state.pc = utils.wrapAddr(state.pc + count);
     utils.refreshNextPc();
   }
-
+  //#endregion
+  //#region Instruction Execution
   /**
    * Execute a single instruction sitting at the current PC and
    * update flags/regs/highlights accordingly.
@@ -103,7 +94,8 @@
     }
   }
   //Jesus mary and joesph this function is long and it makes me feel like I should take a shower after writing it
-
+  //#endregion
+  //#region Execution Control
   /**
    * Wraps `execInstr` with bounds/exception checks so UI buttons can spam it.
    * Returns true if something actually ran.
@@ -143,20 +135,6 @@
     if(steps >= MAX){
       trace.log('Run bailed: step limit hit (again)');
       hooks.showToast?.('Step limit reached — halting run', 'info');
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'step-limit',
-          hypothesisId:'H1',
-          location:'executionModule.js:run',
-          message:'step limit hit',
-          data:{steps, max:MAX},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
-      // #endregion
     }
     CPU.ui?.updateAll?.();
     state.running = false;
@@ -235,7 +213,9 @@
     CPU.trace.log('Restarted program counter');
     CPU.ui?.updateAll?.();
   }
-
+  //#endregion
+  //#region Exports
+  //*insert js being js joke here*
   CPU.execution = {
     execInstr,
     safeStep,
@@ -246,5 +226,7 @@
     reset,
     restart
   };
+  //#endregion
+  //written by Ahmed Guesmi (bm_mido)
 })(window);
 

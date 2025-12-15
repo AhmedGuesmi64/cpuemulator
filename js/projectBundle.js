@@ -3,7 +3,11 @@
 (function(coreTarget){
   const CPU = coreTarget.CPU;
   if(!CPU) throw new Error('CPU core missing for project bundle.');
+  //take a look at this, simmer in it smell it, feel it you know what that is ? that's right baby
+  // pure unadulterated object serialization baby woo yeah ! (but it's just glorified JSON) also JSON is probably the best thing
+  //to come out of javascript not cause it's good but because it's widely supported and simple enough to not cause too much trouble
 
+  //#region Export / Import
   function exportProject(){
     const payload = {
       version: 1,
@@ -18,8 +22,8 @@
       prevPc: CPU.state.prevPc,
       nextPc: CPU.state.nextPc
     };
-    const blob = new Blob([JSON.stringify(payload,null,2)], { type:'application/json' });
-    const url = URL.createObjectURL(blob);
+    const blob = new Blob([JSON.stringify(payload,null,2)], { type:'application/json' }); //the name blob is funny as hell not gonna lie
+    const url = URL.createObjectURL(blob); //why just why js why
     const a = document.createElement('a');
     a.href = url;
     a.download = 'project.cpuproj.json';
@@ -28,7 +32,7 @@
     a.remove();
     URL.revokeObjectURL(url);
   }
-
+  //inshallah this function shall work habibi
   function importProjectFromText(txt){
     const obj = JSON.parse(txt);
     if(!obj || typeof obj !== 'object') throw new Error('Invalid project file');
@@ -56,18 +60,18 @@
       if(asm && !hex) CPU.editor.scrollEditorIntoView?.('asm');
       else if(hex && !asm) CPU.editor.scrollEditorIntoView?.('hex');
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'import-display',
-          hypothesisId:'H3',
-          location:'projectBundle.js:importProjectFromText',
-          message:'project import set editors + scrolled',
-          data:{asmLen:(asm||'').length, hexLen:(hex||'').length, focus: asm && !hex ? 'asm' : hex && !asm ? 'hex' : 'both'},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
+      // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+      //   method:'POST',headers:{'Content-Type':'application/json'},
+      //   body:JSON.stringify({
+      //     sessionId:'debug-session',
+      //     runId:'import-display',
+      //     hypothesisId:'H3',
+      //     location:'projectBundle.js:importProjectFromText',
+      //     message:'project import set editors + scrolled',
+      //     data:{asmLen:(asm||'').length, hexLen:(hex||'').length, focus: asm && !hex ? 'asm' : hex && !asm ? 'hex' : 'both'},
+      //     timestamp:Date.now()
+      //   })
+      // }).catch(()=>{});
       // #endregion
     }
     CPU.utils.refreshNextPc();
@@ -80,26 +84,30 @@
     file.text().then(importProjectFromText).catch(err=>{
       CPU.hooks?.showToast?.('Failed to import project: ' + (err && err.message ? err.message : err), 'error');
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'toast-debug',
-          hypothesisId:'T4',
-          location:'projectBundle.js:importProjectFromFile',
-          message:'project import error toast',
-          data:{name:file && file.name},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
+      // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+      //   method:'POST',headers:{'Content-Type':'application/json'},
+      //   body:JSON.stringify({
+      //     sessionId:'debug-session',
+      //     runId:'toast-debug',
+      //     hypothesisId:'T4',
+      //     location:'projectBundle.js:importProjectFromFile',
+      //     message:'project import error toast',
+      //     data:{name:file && file.name},
+      //     timestamp:Date.now()
+      //   })
+      // }).catch(()=>{});
       // #endregion
     });
   }
+  //#endregion
 
+  //#region Expose API
   CPU.projectBundle = {
     exportProject,
     importProjectFromFile,
     importProjectFromText
   };
+  //#endregion
 })(window);
+//writen by Ahmed Guesmi (bm_mido)
 

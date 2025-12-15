@@ -2,6 +2,7 @@
 // keeps the DOM barely alive without letting the emulator implode
 //good luck trying to bebug this mess 
 (function(coreTarget){
+  // #region state & constants
   const CPU = coreTarget.CPU;
   if(!CPU) throw new Error('CPU core missing.');
 
@@ -42,7 +43,9 @@ JMP 00`,
       hex: `00 50 01 51 81 40 50 C0`
     }
   };
+  // #endregion state & constants
 
+  // #region rendering & view helpers
   function getCurrentInstructionContext(){
     if(state.pc < 0 || state.pc >= CPU.config.MEM_SIZE) return null;
     const opcode = state.mem[state.pc];
@@ -171,19 +174,19 @@ JMP 00`,
     // flash cells that changed
     if(changedAddrs.length){
       flashChangedCells(changedAddrs);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'flash-fix',
-          hypothesisId:'H1',
-          location:'uiModule.js:updateAll',
-          message:'memory changed',
-          data:{mode:memoryViewMode,count:changedAddrs.length,addrs:changedAddrs.slice(0,8)},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
+      // #region agent log (disabled)
+      // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+      //   method:'POST',headers:{'Content-Type':'application/json'},
+      //   body:JSON.stringify({
+      //     sessionId:'debug-session',
+      //     runId:'flash-fix',
+      //     hypothesisId:'H1',
+      //     location:'uiModule.js:updateAll',
+      //     message:'memory changed',
+      //     data:{mode:memoryViewMode,count:changedAddrs.length,addrs:changedAddrs.slice(0,8)},
+      //     timestamp:Date.now()
+      //   })
+      // }).catch(()=>{});
       // #endregion
     }
 
@@ -258,19 +261,19 @@ JMP 00`,
     const btn = document.getElementById('highlight-toggle-btn');
     if(btn){
       btn.textContent = CPU.highlight.enabled ? 'Hide prev/next highlight' : 'Show prev/next highlight';
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'highlight-toggle',
-          hypothesisId:'H2',
-          location:'uiModule.js:updateHighlightToggleLabel',
-          message:'highlight toggle label update',
-          data:{enabled:CPU.highlight.enabled, text:btn.textContent},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
+      // #region agent log (disabled)
+      // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+      //   method:'POST',headers:{'Content-Type':'application/json'},
+      //   body:JSON.stringify({
+      //     sessionId:'debug-session',
+      //     runId:'highlight-toggle',
+      //     hypothesisId:'H2',
+      //     location:'uiModule.js:updateHighlightToggleLabel',
+      //     message:'highlight toggle label update',
+      //     data:{enabled:CPU.highlight.enabled, text:btn.textContent},
+      //     timestamp:Date.now()
+      //   })
+      // }).catch(()=>{});
       // #endregion
     }
   }
@@ -298,24 +301,24 @@ JMP 00`,
     toast.className = `toast toast-${variant}`;
     toast.textContent = message;
     stack.appendChild(toast);
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        sessionId:'debug-session',
-        runId:'step-limit',
-        hypothesisId:'H3',
-        location:'uiModule.js:showToast',
-        message:'toast shown',
-        data:{variant,message},
-        timestamp:Date.now()
-      })
-    }).catch(()=>{});
+    // #region agent log (disabled)
+    // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+    //   method:'POST',headers:{'Content-Type':'application/json'},
+    //   body:JSON.stringify({
+    //     sessionId:'debug-session',
+    //     runId:'step-limit',
+    //     hypothesisId:'H3',
+    //     location:'uiModule.js:showToast',
+    //     message:'toast shown',
+    //     data:{variant,message},
+    //     timestamp:Date.now()
+    //   })
+    // }).catch(()=>{});
     // #endregion
     setTimeout(()=> toast.classList.add('fade'), 3200);
     setTimeout(()=> toast.remove(), 3800);
   }
-
+  //I want to remove this but I'm scared of breaking everything
   function flashChangedCells(addrs){
     const unified = document.getElementById('unified-mem-table');
     const pm = document.getElementById('prog-mem-table');
@@ -360,8 +363,12 @@ JMP 00`,
     updateMemoryViewButtons();
     updateAll();
   }
+  // #endregion rendering & view helpers
 
-  /** Keeps the two editor panes (CodeMirror fallback) in sync with whatever we just loaded. */
+  // #region editor buffers & inputs
+  /** Keeps the two editor panes (CodeMirror fallback) in sync with whatever we just loaded.
+   * actually kind of proud of this function ngl
+   */
   function setEditorBuffers(asmText = '', hexText = ''){
     if(CPU.editor){
       CPU.editor.setAsmText(asmText.trim());
@@ -373,19 +380,19 @@ JMP 00`,
         CPU.editor.scrollEditorIntoView?.('hex');
       }
       persistEditors(asmText, hexText);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'import-display',
-          hypothesisId:'H2',
-          location:'uiModule.js:setEditorBuffers',
-          message:'scroll editors after set',
-          data:{asmLen:asmText.length, hexLen:hexText.length, focus: asmText.trim() && !hexText.trim() ? 'asm' : hexText.trim() && !asmText.trim() ? 'hex' : 'both'},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
+      // #region agent log (disabled)
+      // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+      //   method:'POST',headers:{'Content-Type':'application/json'},
+      //   body:JSON.stringify({
+      //     sessionId:'debug-session',
+      //     runId:'import-display',
+      //     hypothesisId:'H2',
+      //     location:'uiModule.js:setEditorBuffers',
+      //     message:'scroll editors after set',
+      //     data:{asmLen:asmText.length, hexLen:hexText.length, focus: asmText.trim() && !hexText.trim() ? 'asm' : hexText.trim() && !asmText.trim() ? 'hex' : 'both'},
+      //     timestamp:Date.now()
+      //   })
+      // }).catch(()=>{});
       // #endregion
     } else {
       const asmEl = document.getElementById('assembler-in');
@@ -401,26 +408,28 @@ JMP 00`,
     setEditorBuffers('', '');
   }
 
-  /** Accepts either .hex or .asm files via input/drag-drop and loads them. */
+  /** Accepts either .hex or .asm files via input/drag-drop and loads them. 
+   * haha UX goes brrrrrrr
+  */
   function readAndLoadFile(file){
     if(!file) return;
     file.text().then((txt)=>{
       const name = (file.name || '').toLowerCase();
       const trimmed = txt.trim();
       const isHex = name.endsWith('.hex') || /^[0-9A-Fa-f\s,]+$/.test(trimmed);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'import-display',
-          hypothesisId:'H1',
-          location:'uiModule.js:readAndLoadFile',
-          message:'import file parsed',
-          data:{name, isHex, length:trimmed.length},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
+      // #region agent log (disabled)
+      // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+      //   method:'POST',headers:{'Content-Type':'application/json'},
+      //   body:JSON.stringify({
+      //     sessionId:'debug-session',
+      //     runId:'import-display',
+      //     hypothesisId:'H1',
+      //     location:'uiModule.js:readAndLoadFile',
+      //     message:'import file parsed',
+      //     data:{name, isHex, length:trimmed.length},
+      //     timestamp:Date.now()
+      //   })
+      // }).catch(()=>{});
       // #endregion
       if(name.endsWith('.hex') || /^[0-9A-Fa-f\s,]+$/.test(txt.trim())){
         const machineBox = document.getElementById('machine-in');
@@ -464,7 +473,9 @@ JMP 00`,
     // also wire direct editor drops
     CPU.editor?.attachDropToEditors?.(handleEditorDrop);
   }
+  // #endregion editor buffers & inputs
 
+  // #region samples
   /**
    * Fetches one of the sample programs under /tests and loads it either
    * as ASM (assemble immediately) or HEX (direct memory load).
@@ -482,19 +493,19 @@ JMP 00`,
       const url = paths[idx];
       return fetch(url)
         .then(resp=>{
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-              sessionId:'debug-session',
-              runId:'sample-load',
-              hypothesisId:'S1',
-              location:'uiModule.js:loadSampleTest',
-              message:'fetch status',
-              data:{name, ext, path:url, ok:resp.ok, status:resp.status},
-              timestamp:Date.now()
-            })
-          }).catch(()=>{});
+          // #region log (disabled)
+          // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+          //   method:'POST',headers:{'Content-Type':'application/json'},
+          //   body:JSON.stringify({
+          //     sessionId:'debug-session',
+          //     runId:'sample-load',
+          //     hypothesisId:'S1',
+          //     location:'uiModule.js:loadSampleTest',
+          //     message:'fetch status',
+          //     data:{name, ext, path:url, ok:resp.ok, status:resp.status},
+          //     timestamp:Date.now()
+          //   })
+          // }).catch(()=>{});
           // #endregion
           if(!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
           return resp.text();
@@ -510,19 +521,19 @@ JMP 00`,
     tryFetch()
       .then(text=>{
         const trimmed = (text || '').trim();
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            sessionId:'debug-session',
-            runId:'sample-load',
-            hypothesisId:'S2',
-            location:'uiModule.js:loadSampleTest',
-            message:'sample loaded',
-            data:{name, ext, length:trimmed.length},
-            timestamp:Date.now()
-          })
-        }).catch(()=>{});
+        // #region log (disabled)
+        // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+        //   method:'POST',headers:{'Content-Type':'application/json'},
+        //   body:JSON.stringify({
+        //     sessionId:'debug-session',
+        //     runId:'sample-load',
+        //     hypothesisId:'S2',
+        //     location:'uiModule.js:loadSampleTest',
+        //     message:'sample loaded',
+        //     data:{name, ext, length:trimmed.length},
+        //     timestamp:Date.now()
+        //   })
+        // }).catch(()=>{});
         // #endregion
         if(!trimmed){
           hooks.showToast?.('Sample file was empty—double-check the tests folder.', 'error');
@@ -544,19 +555,19 @@ JMP 00`,
         const fb = sampleFallbacks[name];
         if(fb && fb[ext]){
           const trimmed = (fb[ext] || '').trim();
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-              sessionId:'debug-session',
-              runId:'sample-load',
-              hypothesisId:'S4',
-              location:'uiModule.js:loadSampleTest',
-              message:'fallback sample used',
-              data:{name, ext, length:trimmed.length},
-              timestamp:Date.now()
-            })
-          }).catch(()=>{});
+          // #region log (disabled)
+          // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+          //   method:'POST',headers:{'Content-Type':'application/json'},
+          //   body:JSON.stringify({
+          //     sessionId:'debug-session',
+          //     runId:'sample-load',
+          //     hypothesisId:'S4',
+          //     location:'uiModule.js:loadSampleTest',
+          //     message:'fallback sample used',
+          //     data:{name, ext, length:trimmed.length},
+          //     timestamp:Date.now()
+          //   })
+          // }).catch(()=>{});
           // #endregion
           if(ext === 'asm'){
             setEditorBuffers(trimmed, '');
@@ -571,40 +582,42 @@ JMP 00`,
           }
           return;
         }
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            sessionId:'debug-session',
-            runId:'sample-load',
-            hypothesisId:'S3',
-            location:'uiModule.js:loadSampleTest',
-            message:'sample load failed',
-            data:{name, ext, error: (err && err.message) || String(err)},
-            timestamp:Date.now()
-          })
-        }).catch(()=>{});
+        // #region log (disabled)
+        // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+        //   method:'POST',headers:{'Content-Type':'application/json'},
+        //   body:JSON.stringify({
+        //     sessionId:'debug-session',
+        //     runId:'sample-load',
+        //     hypothesisId:'S3',
+        //     location:'uiModule.js:loadSampleTest',
+        //     message:'sample load failed',
+        //     data:{name, ext, error: (err && err.message) || String(err)},
+        //     timestamp:Date.now()
+        //   })
+        // }).catch(()=>{});
         // #endregion
         hooks.showToast?.(`Failed to load sample (${name}.${ext}): ${err && err.message ? err.message : err}`, 'error');
       });
   }
+  // #endregion samples
 
+  // #region legend & trace
   function toggleLegend(){
-    // #region agent log
-    try{
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'legend-toggle',
-          hypothesisId:'L0',
-          location:'uiModule.js:toggleLegend',
-          message:'legend toggle invoked',
-          data:{},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
-    }catch(_){}
+    // #region log (disabled)
+    // try{
+    //   fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+    //     method:'POST',headers:{'Content-Type':'application/json'},
+    //     body:JSON.stringify({
+    //       sessionId:'debug-session',
+    //       runId:'legend-toggle',
+    //       hypothesisId:'L0',
+    //       location:'uiModule.js:toggleLegend',
+    //       message:'legend toggle invoked',
+    //       data:{},
+    //       timestamp:Date.now()
+    //     })
+    //   }).catch(()=>{});
+    // }catch(_){}
     // #endregion
     const list = document.getElementById('legend-list');
     const btn = document.getElementById('legend-toggle-btn');
@@ -613,41 +626,41 @@ JMP 00`,
       const nextCollapsed = !isCollapsed;
       list.classList.toggle('collapsed', nextCollapsed);
       btn.textContent = nextCollapsed ? 'Show Legend' : 'Hide Legend';
-      // #region agent log
-      try{
-        fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            sessionId:'debug-session',
-            runId:'legend-toggle',
-            hypothesisId:'L1',
-            location:'uiModule.js:toggleLegend',
-            message:'legend toggled',
-            data:{collapsed:nextCollapsed},
-            timestamp:Date.now()
-          })
-        }).catch(()=>{});
-      }catch(_){}
+      // #region log (disabled)
+      // try{
+      //   fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+      //     method:'POST',headers:{'Content-Type':'application/json'},
+      //     body:JSON.stringify({
+      //       sessionId:'debug-session',
+      //       runId:'legend-toggle',
+      //       hypothesisId:'L1',
+      //       location:'uiModule.js:toggleLegend',
+      //       message:'legend toggled',
+      //       data:{collapsed:nextCollapsed},
+      //       timestamp:Date.now()
+      //     })
+      //   }).catch(()=>{});
+      // }catch(_){}
       // #endregion
     }
   }
 
   function exportTrace(){
-    // #region agent log
-    try{
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'trace-export',
-          hypothesisId:'E0',
-          location:'uiModule.js:exportTrace',
-          message:'exportTrace invoked',
-          data:{},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
-    }catch(_){}
+    // #region log (disabled)
+    // try{
+    //   fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+    //     method:'POST',headers:{'Content-Type':'application/json'},
+    //     body:JSON.stringify({
+    //       sessionId:'debug-session',
+    //       runId:'trace-export',
+    //       hypothesisId:'E0',
+    //       location:'uiModule.js:exportTrace',
+    //       message:'exportTrace invoked',
+    //       data:{},
+    //       timestamp:Date.now()
+    //     })
+    //   }).catch(()=>{});
+    // }catch(_){}
     // #endregion
     const traceEl = document.getElementById('trace');
     if(!traceEl){
@@ -669,24 +682,26 @@ JMP 00`,
     a.remove();
     URL.revokeObjectURL(url);
     hooks.showToast?.('Trace exported', 'info');
-    // #region agent log
-    try{
-      fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'trace-export',
-          hypothesisId:'E1',
-          location:'uiModule.js:exportTrace',
-          message:'trace exported',
-          data:{count:lines.length},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
-    }catch(_){}
+    // #region log (disabled)
+    // try{
+    //   fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+    //     method:'POST',headers:{'Content-Type':'application/json'},
+    //     body:JSON.stringify({
+    //       sessionId:'debug-session',
+    //       runId:'trace-export',
+    //       hypothesisId:'E1',
+    //       location:'uiModule.js:exportTrace',
+    //       message:'trace exported',
+    //       data:{count:lines.length},
+    //       timestamp:Date.now()
+    //     })
+    //   }).catch(()=>{});
+    // }catch(_){}
     // #endregion
   }
+  // #endregion legend & trace
 
+  // #region persistence & editor utilities
   function persistEditors(asm, hex){
     try{
       localStorage.setItem(EDITOR_STORAGE_KEY, JSON.stringify({ asm, hex }));
@@ -744,7 +759,9 @@ JMP 00`,
   function clearHex(){
     setEditorBuffers(CPU.editor?.getAsmText?.() || document.getElementById('assembler-in')?.value || '', '');
   }
+  // #endregion persistence & editor utilities
 
+  // #region init & wiring
   /**
    * Main entry point: registers hooks, initializes file input/drag-drop,
    * and ensures the highlight + trace mode buttons have the right state.
@@ -753,19 +770,19 @@ JMP 00`,
     hooks.flashDataCell = flashDataCell;
     hooks.flashRegister = flashRegister;
     hooks.showToast = showToast;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        sessionId:'debug-session',
-        runId:'toast-wire',
-        hypothesisId:'T1',
-        location:'uiModule.js:init',
-        message:'hooks.showToast wired',
-        data:{wired:true},
-        timestamp:Date.now()
-      })
-    }).catch(()=>{});
+    // #region log (disabled)
+    // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+    //   method:'POST',headers:{'Content-Type':'application/json'},
+    //   body:JSON.stringify({
+    //     sessionId:'debug-session',
+    //     runId:'toast-wire',
+    //     hypothesisId:'T1',
+    //     location:'uiModule.js:init',
+    //     message:'hooks.showToast wired',
+    //     data:{wired:true},
+    //     timestamp:Date.now()
+    //   })
+    // }).catch(()=>{});
     // #endregion
     hooks.onHighlightChange = ()=>{
       updateHighlightToggleLabel();
@@ -801,7 +818,8 @@ JMP 00`,
     if(navUnified) navUnified.addEventListener('click', (e)=>{ e.preventDefault(); setMemoryView('unified'); });
     if(navSplit) navSplit.addEventListener('click', (e)=>{ e.preventDefault(); setMemoryView('split'); });
   }
-
+  //I have the sneaking suspicion that this entire file is one giant region I also have a suspicion that I'm going to regret commenting out all these logs
+  //but then again performance comes first
   CPU.ui = {
     updateAll,
     editMem,
@@ -816,5 +834,7 @@ JMP 00`,
     setMemoryView,
     init
   };
+  // #endregion init & wiring
 })(window);
+//writen by Ahmed Guesmi
 

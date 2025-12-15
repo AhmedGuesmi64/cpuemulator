@@ -18,23 +18,22 @@
   })();
   
   // instrumentation for nav/status links presence
-  document.addEventListener('DOMContentLoaded', ()=>{
-    const sessionId = 'debug-session';
-    const runId = 'pre-fix';
-    const endpoint = 'http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029';
-    const buttons = Array.from(document.querySelectorAll('.nav-button')).map(b=>b.textContent?.trim());
-    const statusButtons = buttons.filter(t=>t && /status/i.test(t));
-    const resourceLinks = Array.from(document.querySelectorAll('.resource-cards .card button, .resource-cards .card a')).map(b=>b.textContent?.trim() || '');
-    const statusResources = resourceLinks.filter(t=>t && /status/i.test(t));
-    // #region agent log
-    fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      sessionId,runId,hypothesisId:'A',location:'navigationMenuScript.js:DOMLoaded',message:'nav buttons snapshot',data:{buttons,statusButtons},timestamp:Date.now()
-    })}).catch(()=>{});
-    // #endregion
-    // #region agent log
-    fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      sessionId,runId,hypothesisId:'B',location:'navigationMenuScript.js:DOMLoaded',message:'resource links snapshot',data:{resourceLinks,statusResources},timestamp:Date.now()
-    })}).catch(()=>{});
-    // #endregion
-  });
+  //this is all for the sake of debuuggin so it's commented out 
+  // document.addEventListener('DOMContentLoaded', ()=>{
+  //   const sessionId = 'debug-session';
+  //   const runId = 'pre-fix';
+  //   const endpoint = 'http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029';
+  //   const buttons = Array.from(document.querySelectorAll('.nav-button')).map(b=>b.textContent?.trim());
+  //   const statusButtons = buttons.filter(t=>t && /status/i.test(t));
+  //   const resourceLinks = Array.from(document.querySelectorAll('.resource-cards .card button, .resource-cards .card a')).map(b=>b.textContent?.trim() || '');
+  //   const statusResources = resourceLinks.filter(t=>t && /status/i.test(t));
+  //   
+  //   fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+  //     sessionId,runId,hypothesisId:'A',location:'navigationMenuScript.js:DOMLoaded',message:'nav buttons snapshot',data:{buttons,statusButtons},timestamp:Date.now()
+  //   })}).catch(()=>{});
+  //   fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+  //     sessionId,runId,hypothesisId:'B',location:'navigationMenuScript.js:DOMLoaded',message:'resource links snapshot',data:{resourceLinks,statusResources},timestamp:Date.now()
+  //   })}).catch(()=>{});
+  // });
+  //writen by Ahmed Guesmi (bm_mido)
   

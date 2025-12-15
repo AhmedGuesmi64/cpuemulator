@@ -3,6 +3,7 @@
 // and all those tiny helpers in one place so every other module can breathe.
 (function(coreTarget){
   const CPU = coreTarget.CPU || (coreTarget.CPU = {});
+  //#region Configuration and State
 
   // just enough config to remind me how small this "CPU" is
   const MEM_SIZE = 256;
@@ -17,9 +18,13 @@
   const HALT_SENTINEL = 0x3F;
 
   /**
-   * Everything the pretend CPU needs to remember between steps.
+   * Everything the  CPU needs to remember between steps.
    * Other modules poke this directly, so try not to mutate it blindly.
    * Update: I did mutate it blindly anyway because JS is weird like that.
+   * Update update: why not make a copy of the state every time I mutate it? oh right performance
+   * update update update: help
+   * update x4: I regret everything
+   * update x5: for whoever is gonna read this in the future, I'm sorry I'm a java developer forced to write js code I'm trying best :((
    */
   const state = {
     mem: new Uint8Array(MEM_SIZE).fill(0),
@@ -34,6 +39,7 @@
 
   /**
    * Hooks for UI callbacks. uiModule assigns the real functions later.
+   * I hate this pattern but JS doesn't have interfaces or abstract classes so here we are
    */
   const hooks = {
     flashDataCell: ()=>{},
@@ -44,7 +50,9 @@
     showToast: ()=>{},
     onFlagsChange: ()=>{},
   };
+  //#endregion
 
+  //#region Utility Functions
   // --- helpers ---
   /** Turn any number into an uppercase hex string (00 by default). */
   function toHex(x, pad = 2){
@@ -194,6 +202,8 @@
       hooks.onHighlightChange(this.enabled);
     }
   };
+  //#endregion
+
 
   // --- sample programs ripped from the lecture PDF so I stop retyping ---
   const samples = {
@@ -238,7 +248,9 @@
       data: {}
     }
   };
+  //#endregion
 
+  //#region State Reset
   /** Wipe RAM, registers, PC, trace – basically puts everything back to zero. I want to call it the nuclear button but I'm supposed to professional*/
   function resetState(){
     state.mem.fill(0);
@@ -279,4 +291,7 @@
   CPU.samples = samples;
   CPU.config.stateReset = resetState;
 })(window);
+//#endregion
+
+//code written by Ahmed Guesmi (bm_mido)
 

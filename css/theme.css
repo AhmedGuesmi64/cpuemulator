@@ -1,4 +1,20 @@
-/* Top navigation bar */
+/* ==========================================================================
+   theme.css — Styling for the CPU emulator UI
+   Sections:
+     1) Navigation bars & dropdown menus
+     2) Theme tokens (light/dark)
+     3) Page shell & layout primitives
+     4) Landing/marketing blocks (hero, features, how-to, resources)
+     5) Feedback helpers (toasts, legend, dropdown separators, mode toggles)
+     6) Editors & CodeMirror skin
+     7) Tables, memory/trace views, small UI bits
+     8) Editor layout + responsive tweaks + register highlighting
+   Notes:
+     - Comments aim to explain intent, not restyle.
+     - Keep light/dark variable pairs in sync when changing colors.
+   ========================================================================== */
+
+/* === Navigation: primary top bar, secondary function bar, dropdown menus === */
 .primary-nav{
   display:flex;
   align-items:center;
@@ -240,6 +256,7 @@
     --mono: "SFMono-Regular", "Menlo", "Monaco", "Segoe UI Mono", monospace;
   }
 
+  /* Light theme token overrides */
   .theme-light{
     --bg:#f5f8fb;
     --panel:#ffffff;
@@ -257,7 +274,7 @@
     --editor-bg:#fdfefe;
 }
   
-  /* Page */
+  /* === Page shell (background + base typography) === */
   html,body{
     height:100%;
     margin:0;
@@ -289,7 +306,7 @@
     border:1px solid rgba(0,0,0,0.05);
   }
   
-  /* Header */
+  /* === Header branding === */
   .header {
     display:flex;
     align-items:center;
@@ -311,13 +328,13 @@
   .title { font-size:18px; font-weight:700; }
   .subtitle { font-size:13px; color:var(--muted-text); }
   
-  /* Layout */
+  /* === Layout primitives === */
   .row { display:flex; gap:16px; align-items:flex-start; }
   .col { display:flex; flex-direction:column; gap:12px; }
 .card { background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.005)); border-radius:12px; padding:14px; border:var(--glass-border); box-shadow:0 8px 24px rgba(2,8,8,0.25); }
   .card-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; }
   
-  /* Buttons */
+  /* === Buttons === */
   .btn {
     background: linear-gradient(90deg, var(--teal), var(--cyan));
     color:#002826;
@@ -342,7 +359,7 @@
   background: rgba(255,255,255,0.12);
   color: var(--ink);
 }
-/* Hero + feature + how + resources styling */
+/* === Landing blocks: hero, feature strip, how-it-works, resources === */
 .hero{
   display:grid;
   grid-template-columns: minmax(260px, 1fr) 220px;
@@ -480,6 +497,7 @@
   border:1px solid rgba(61,223,230,0.18);
 }
 
+/* === Footer and state chips === */
 .footer{
   margin-top:16px;
   padding:12px;
@@ -509,6 +527,7 @@
   to   { background: transparent; }
 }
 
+/* === Toasts, legend collapse, dropdown separators, drag highlight === */
 #toast-stack{
   position:fixed;
   top:16px;
@@ -579,7 +598,7 @@
   height:32px;
   line-height:18px;
 }
-/* Dark theme for CodeMirror to match the app */
+/* === CodeMirror skin to match app themes === */
 .CodeMirror{
   background: #0b1f1f;
   color: var(--ink);
@@ -604,6 +623,8 @@
 .cm-s-material-darker .CodeMirror-linenumber{ color: var(--muted-text); }
 .cm-s-material-darker.CodeMirror{ background:#0b1f1f; }
   .hidden{ display:none; }
+
+/* === Trace list styling === */
 .trace-entry{
   padding:4px 0;
   border-bottom:1px solid rgba(255,255,255,0.04);
@@ -622,7 +643,7 @@
   gap:8px;
 }
   
-  /* Inputs */
+  /* === Inputs and button rows === */
 .input, textarea { background: var(--code-bg); color:var(--ink); border:1px solid rgba(255,255,255,0.04); padding:10px; border-radius:8px; outline:none; resize:vertical; width:100%; box-sizing:border-box; }
 .input:focus, textarea:focus { box-shadow:var(--focus); border-color:var(--teal); }
 .button-row{
@@ -632,7 +653,7 @@
   margin-top:8px;
 }
   
-  /* Tables */
+  /* === Tables (memory/program/trace) === */
   .table { width:100%; border-collapse:collapse; font-size:13px; overflow:auto; }
   .table th { text-align:left; padding:8px 10px; color:var(--muted-text); font-weight:700; font-size:12px; }
   .table td { padding:8px 10px; border-top:1px solid rgba(255,255,255,0.02); color:var(--ink); vertical-align:middle; position:relative; }
@@ -800,6 +821,8 @@
     .memory-grid { flex-direction:column; }
     .top-controls > * { min-width:0; }
   }
+  
+  /* === Register badges & PC highlighting === */
   .reg-box {
     border: 1px solid rgba(255,255,255,0.08);
     padding: 8px;

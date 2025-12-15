@@ -1,5 +1,5 @@
 // memoryView.js
-// Unified von Neumann-ish memory renderer (shows program + data in one table)
+// Unified von Neumann-ish memory renderer (shows program + data in one table) as per Professor's Plenk request.
 (function(coreTarget){
   const CPU = coreTarget.CPU;
   if(!CPU) throw new Error('CPU core missing for memoryView.');
@@ -16,7 +16,7 @@
     const dataOperandSet = new Set(instrCtx?.dataOperands || []);
     const immRowSet = new Set(instrCtx?.immediateRows || []);
     const jumpTargetSet = new Set(instrCtx?.jumpTargets || []);
-
+    //I swear to god if I have to debug messed up table rows because of this I'm straight up gonna slime myself out twin
     let rows = '<tr><th>Addr</th><th>Hex</th><th>Dec</th><th>Disasm</th></tr>';
     for(let i=0;i<CPU.config.MEM_SIZE;i++){
       const isCurrent = (i === state.pc);
@@ -30,7 +30,7 @@
       if(immRowSet.has(i)) classes.push('pm-operand-byte');
       if(jumpTargetSet.has(i)) classes.push('pm-target');
       if(dataOperandSet.has(i)) classes.push('dm-operand');
-
+      //Boss please I'm tired of DOM please boss I haven't seen my family in months
       rows += `<tr class="${classes.join(' ')}">
         <td>${utils.toHex(i)}</td>
         <td contenteditable="true" onblur="editMem(${i}, this.innerText)">${utils.toHex(state.mem[i])}</td>
@@ -43,4 +43,5 @@
 
   CPU.memoryView = { renderUnifiedTable };
 })(window);
+//code written by Ahmed Guesmi (bm_mido)
 

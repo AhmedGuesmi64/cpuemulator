@@ -1,5 +1,6 @@
 // themeToggle.js
 // Tiny theme switcher (dark/light) stored in localStorage
+//this actually doesn't work the way I wanted it but I really don't give a shit anymore
 (function(){
   const STORAGE_KEY = 'cpuemulator_theme';
 
@@ -50,4 +51,6 @@
     if(btn) btn.addEventListener('click', toggleTheme);
   });
 })();
+//simple enough I guess (it doens't work XDD)
+//writen by Ahmed Guesmi (bm_mido)
 

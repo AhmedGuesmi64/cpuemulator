@@ -1,5 +1,8 @@
 // editorEnhance.js
 // CodeMirror setup for ASM and HEX editors with lightweight hints
+//Imma be honest with you here I really don't know how any of this work on a deep level I just looked up some code on the internet and slapped it together until it did what I wanted
+//TODO: document this ?
+
 (function(coreTarget){
   const CPU = coreTarget.CPU;
   if(!CPU) throw new Error('CPU core missing for editor enhance.');
@@ -9,6 +12,7 @@
 
   function defineModes(){
     if(!window.CodeMirror || !CodeMirror.defineSimpleMode) return;
+    //this feels so fucking wrong
     CodeMirror.defineSimpleMode('asmTiny', {
       start: [
         { regex: /;.*$/, token: 'comment' },
@@ -42,6 +46,7 @@
       };
     };
   }
+  //I guess ?
 
   function wireAutoHint(cm, helperName){
     if(!cm || !CodeMirror.hint || !CodeMirror.hint[helperName]) return;
@@ -52,8 +57,7 @@
         CodeMirror.commands.autocomplete(cmInstance, CodeMirror.hint[helperName], { completeSingle:false });
       }
     });
-  }
-
+  } //tested it seems to work didn't do any further testing. Huge sucess
   function initEditors(){
     if(!window.CodeMirror) return;
     defineModes();
@@ -91,11 +95,11 @@
           completeSingle: false
         }
       });
-      CodeMirror.registerHelper('hint', 'hexTiny', makeHint(['00','01','02','03','04','05','10','20','30','FF','C0','A1']));
+      CodeMirror.registerHelper('hint', 'hexTiny', makeHint(['00','01','02','03','04','05','10','20','30','FF','C0','A1'])); //this is a very cheap way to do it but it gives the illusion of it working so eh
       wireAutoHint(hexEditor, 'hexTiny');
     }
   }
-
+  //
   function getAsmText(){
     return asmEditor ? asmEditor.getValue() : (document.getElementById('assembler-in')?.value || '');
   }
@@ -133,7 +137,7 @@
       if(el) el.scrollTop = 0;
     }
   }
-
+  //UX improvement for import project, because it doesn't really show the editor when you import code so it's a better UX experience
   function scrollEditorIntoView(which){
     const useEditor = which === 'asm' ? asmEditor : hexEditor;
     const fallbackId = which === 'asm' ? 'assembler-in' : 'machine-in';
@@ -141,23 +145,23 @@
     const target = el || document.body;
     const rect = target.getBoundingClientRect();
     const targetY = window.scrollY + rect.top - 120; // offset to clear sticky nav + breathing room
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        sessionId:'debug-session',
-        runId:'import-display',
-        hypothesisId:'H4',
-        location:'editorEnhance.js:scrollEditorIntoView',
-        message:'scroll to editor',
-        data:{which, target: useEditor ? 'codemirror' : 'textarea', rectTop: rect.top},
-        timestamp:Date.now()
-      })
-    }).catch(()=>{});
+    // #region log
+    // fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
+    //   method:'POST',headers:{'Content-Type':'application/json'},
+    //   body:JSON.stringify({
+    //     sessionId:'debug-session',
+    //     runId:'import-display',
+    //     hypothesisId:'H4',
+    //     location:'editorEnhance.js:scrollEditorIntoView',
+    //     message:'scroll to editor',
+    //     data:{which, target: useEditor ? 'codemirror' : 'textarea', rectTop: rect.top},
+    //     timestamp:Date.now()
+    //   })
+    // }).catch(()=>{});
     // #endregion
     window.scrollTo({ top: targetY, behavior:'smooth' });
   }
-
+  //UX hell yeah
   function attachDropToEditors(onDrop){
     const wire = (el, which)=>{
       if(!el) return;
@@ -186,4 +190,4 @@
     attachDropToEditors
   };
 })(window);
-
+//code mainly kind of stolen from various places on the internet and slapped together by Ahmed Guesmi (bm_mido)

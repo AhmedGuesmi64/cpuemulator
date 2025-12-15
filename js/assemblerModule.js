@@ -5,7 +5,7 @@
   if(!CPU) throw new Error('CPU core vanished before assembler could even complain.');
 
   const { state, utils, config, samples, hooks } = CPU;
-
+  //#region Disassembler and Assembler
   /**
    * Light-weight disassembler for the tiny ISA.
    * Called for every memory row so keep it boring and fast.
@@ -33,7 +33,7 @@
         return `DB ${utils.toHex(opcode)}`;
     }
   }
-
+  //simple enough right? watch me regret this decision later
   /**
    * Reads the assembler textarea, emits machine bytes,
    * and drops them straight into program memory.
@@ -50,7 +50,7 @@
       const line = raw.replace(/(;|#).*$/,'').trim();
       if(!line) continue;
       let match;
-
+      //oh sweet baby jesus there more opertunities for throws here than a baseball match
       try{
         if((match = line.match(/^LD\s*\[\s*([^\]]+)\s*\]\s*,\s*r([0-3])$/i))){
           const addr = utils.parseNumberLiteral(match[1]);
@@ -78,7 +78,7 @@
 
         if((match = line.match(/^JMP\s*([0-9A-Fa-fx]+)$/i))){
           const addr = utils.parseNumberLiteral(match[1]);
-          if(addr < 0 || addr > 0x3F) throw new Error('JMP target is 0x00-0x3F, sorry not sorry');
+          if(addr < 0 || addr > 0x3F) throw new Error('JMP target is 0x00-0x3F');
           output.push((config.ISA_TYPE.JMP << 6) | (addr & 0x3F));
           continue;
         }
@@ -91,7 +91,7 @@
         throw new Error('no idea what that line was supposed to be');
       }catch(err){
         hooks.showToast?.(`Assemble fail: ${err.message || err} (line: "${line}")`, 'error');
-        // #region agent log
+        // debugging cause this keeps failing :P pretttty sure this won't mess anything up right ?
         fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
           method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({
@@ -104,7 +104,6 @@
             timestamp:Date.now()
           })
         }).catch(()=>{});
-        // #endregion
         return;
       }
     }
@@ -122,7 +121,8 @@
     CPU.ui?.updateAll?.();
     CPU.trace.log({ asm:`Assembled ${byteCount} bytes`, hex: utils.bytesToHexString(output.slice(0, byteCount)) });
   }
-
+  //#endregion
+  //#region Machine Code Loaders
   /** Pulls the hex textarea into memory. */
   function loadMachineCode(){
     const txt = (CPU.editor?.getHexText?.() || '').trim();
@@ -137,7 +137,7 @@
   function loadMachineCodeFromString(hexString){
     try{
       const parts = hexString.trim().split(/[\s,]+/).filter(Boolean);
-      if(parts.some(x=>!/^[0-9A-Fa-f]{1,2}$/.test(x))) throw new Error('Found a non-hex goblin in there');
+      if(parts.some(x=>!/^[0-9A-Fa-f]{1,2}$/.test(x))) throw new Error('Non-hex byte detected');
       state.mem.fill(0);
       parts.map(x=>parseInt(x,16)&0xFF).forEach((v,i)=>{ if(i<config.MEM_SIZE) state.mem[i]=v; });
       state.pc = 0;
@@ -148,7 +148,7 @@
       CPU.trace.log({ asm:`Loaded machine code (${Math.min(parts.length,config.MEM_SIZE)} bytes)`, hex: hexString });
     }catch(err){
       hooks.showToast?.('Failed to load hex: ' + (err && err.message ? err.message : err), 'error');
-      // #region agent log
+      //debugging again because javascript is a very simple and easy language that never causes issues, this will def backfire on me later
       fetch('http://127.0.0.1:7242/ingest/89a61684-f466-4725-bf91-45e7dcbb8029',{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
@@ -161,7 +161,6 @@
           timestamp:Date.now()
         })
       }).catch(()=>{});
-      // #endregion
     }
   }
 
@@ -170,6 +169,7 @@
    * Resets memory, applies any data defaults, and refreshes UI.
    * sweet jesus this function was a pain in the ass
    */
+  //all of this could've been avoided if javascript actually had proper OOP paterns and not just some random bullshit like come on man what is this
   function applyProgram(bytes, dataInit = {}, statusMessage = 'Program lobbed into memory'){
     state.mem.fill(0);
     bytes.forEach((value, index)=>{
@@ -187,7 +187,8 @@
     CPU.ui?.updateAll?.();
     CPU.trace.log(statusMessage);
   }
-
+  //#endregion
+  //#region Sample Loaders
   /** Load Prof. Widmann’s exercise 22 sample and sync the editors. */
   function loadExercise22(){
     applyProgram(samples.exercise22.program, samples.exercise22.data, 'Exercise 22 dumped in');
@@ -225,7 +226,8 @@
     if(frag.includes('loadSample')) loadSample();
     if(frag.includes('loadExercise23')) loadExercise23();
   }
-
+  //#endregion
+  //#region Exports
   CPU.assembler = {
     disasm,
     assemble,
@@ -238,4 +240,5 @@
     tryLoadFromFragment
   };
 })(window);
-
+//#endregion
+//written by Ahmed Guesmi (bm_mido)

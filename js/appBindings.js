@@ -38,5 +38,7 @@
     exportProject: ()=> CPU.projectBundle.exportProject(),
     handleProjectImport: (ev)=>{ const f = ev.target.files && ev.target.files[0]; if(f) CPU.projectBundle.importProjectFromFile(f); ev.target.value=''; }
   });
+  //was not expecting this to be this big (haha)
 })(window);
+//Writen by Ahmed Guesmi (bm_mido)
 
